@@ -13,6 +13,7 @@ import org.matrix.chromext.Resource
 import org.matrix.chromext.db.entity.Script
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.randomString
+import org.matrix.chromext.utils.toJSONArray
 import kotlin.io.encoding.Base64
 
 object GM {
@@ -75,51 +76,65 @@ object GM {
     }
 
     grants += localScript.get("GM.bootstrap")!!
-    // HACK! don't use metadata string
-    val metadataSb = StringBuilder()
-    val metadataList = script.metadata.raw.toMutableList()
-    metadataList.removeAll {
-      it.first in listOf("match", "include", "exclude", "grant", "require", "connect", "run-at", "noframes")
+
+    val GM_info = JSONObject().apply {
+      put("scriptHandler", BuildConfig.SCRIPT_HANDLER_NAME)
+      put("version", BuildConfig.VERSION_NAME)
+      put("scriptMetaStr", script.script.meta)
+      put("scriptWillUpdate", false)
+      put("script", JSONObject().apply {
+        put("name", script.metadata.name)
+        put("namespace", script.metadata.namespace)
+        put("description", script.metadata.description)
+        put("version", script.metadata.version)
+        put("author", script.metadata.author)
+        put("includes", script.metadata.include.toJSONArray())
+        put("matches", script.metadata.match.toJSONArray())
+        put("excludes", script.metadata.exclude.toJSONArray())
+        put("grant", script.metadata.grant.toJSONArray())
+//        put("resources", script.metadata.getAllMetadata("resource").toJSONArray())
+        put("icon", script.metadata.icon)
+        put("homepage", script.metadata.getMetadata("homepage"))
+        put("homepageURL", script.metadata.getMetadata("homepageURL"))
+        put("updateURL", script.metadata.getMetadata("updateURL"))
+        put("downloadURL", script.metadata.getMetadata("downloadURL"))
+        put("unwrap", script.metadata.hasMetadata("unwrap"))
+        put("require", script.metadata.require.toJSONArray())
+        put("noframes", script.metadata.noframes)
+        put("run-at", script.metadata.`run-at`.takeIf { it != Script.RunAt.UNSET }?.value ?: "")
+        put("runAt", script.metadata.`run-at`.takeIf { it != Script.RunAt.UNSET }?.value ?: "")
+        put("connects", script.metadata.connect.toJSONArray())
+        put("connect", script.metadata.connect.toJSONArray())
+
+        put("id", script.id)
+      })
+      put("uuid", script.uuid)
+      put("injectInto", script.metadata.getMetadata("inject-into"))
+      put("storage", script.storage)
     }
-    script.options.match.forEach {
-      metadataList.add("match" to it)
+    val loadConfig = JSONObject().apply {
+      put("resource", script.metadata.getAllMetadata("resource").toJSONArray())
+      put("run-at", script.options.runAt.value)
+      put("inject-into", script.metadata.getMetadata("inject-into"))
+      put("sandbox", script.metadata.getMetadata("sandbox"))
+      put("grant", script.options.grant.toJSONArray())
+      put("require", script.options.require.toJSONArray())
+      put("connect", script.options.connect.toJSONArray())
     }
-    script.options.include.forEach {
-      metadataList.add("include" to it)
-    }
-    script.options.exclude.forEach {
-      metadataList.add("exclude" to it)
-    }
-    script.options.grant.forEach {
-      metadataList.add("grant" to it)
-    }
-    script.options.require.forEach {
-      metadataList.add("require" to it)
-    }
-    script.options.connect.forEach {
-      metadataList.add("connect" to it)
-    }
-    if (script.options.runAt != Script.RunAt.UNSET) {
-      metadataList.add("run-at" to script.options.runAt.value)
-    }
-    if (script.options.noFrames) {
-      metadataList.add("noframes" to "")
-    }
-    metadataSb.appendLine("// ==UserScript==")
-    metadataList.forEach {
-      metadataSb.appendLine("// @${it.first} ${it.second ?: ""}")
-    }
-    metadataSb.appendLine("// ==/UserScript==")
-    val GM_info = JSONObject(mapOf("scriptMetaStr" to metadataSb.toString()))
-    GM_info.put("script", JSONObject().put("id", script.id))
-    GM_info.put("uuid", script.uuid)
-    GM_info.put("scriptHandler", BuildConfig.SCRIPT_HANDLER_NAME)
-    GM_info.put("version", BuildConfig.VERSION_NAME)
-    if (script.storage != null) GM_info.put("storage", script.storage)
     code = "\ndelete window.__loading__;\n${code};"
     code = localScript.get("globalThis")!! + script.lib.joinToString("\n") + code
-    codes.add(
-        "(()=>{ const GM = {key:${Local.key}, name:'${Local.name}'}; const GM_info = ${GM_info}; GM_info.script.code = (key=null) => {${code}};\n${grants}GM.bootstrap();})();\n//# sourceURL=local://ChromeXt/${Uri.encode(script.id)}")
+    codes.add("""
+(() => {
+  const GM = {key:${Local.key}, name: '${Local.name}'};
+  const GM_info = ${GM_info};
+  const loadConfig = ${loadConfig};
+  loadConfig.code = (key=null) => {${code}};
+  ${grants};
+  GM.bootstrap();
+})();
+
+//# sourceURL=local://ChromeXt/${Uri.encode(script.id)}
+    """.trimIndent())
     return codes
   }
 }

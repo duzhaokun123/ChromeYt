@@ -88,3 +88,5 @@ fun Context.startActivitySafe(intent: Intent): Throwable? {
     this.startActivity(intent)
   }.exceptionOrNull()
 }
+
+fun Collection<*>.toJSONArray() = JSONArray(this)

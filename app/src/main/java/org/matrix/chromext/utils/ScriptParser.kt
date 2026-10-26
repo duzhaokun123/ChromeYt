@@ -39,6 +39,10 @@ data class ScriptMetadata(
   fun hasMetadata(key: String): Boolean {
     return raw.find { it.first == key } != null
   }
+
+  fun getAllMetadata(key: String): List<String> {
+    return raw.filter { it.first == key }.mapNotNull { it.second }
+  }
 }
 
 object ScriptParser {

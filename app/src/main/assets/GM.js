@@ -8,14 +8,13 @@ delete GM.globalThis;
 // Override possible references to the original window object.
 // Note that from the DevTools console, these objects are undefined if they are not used in the script debugging context.
 // However, one can break this jail using setTimeout or Function.
-delete GM_info.script.code;
-delete GM_info.script.sync_code;
 delete GM.key;
 delete GM.name;
 Object.freeze(GM_info.script);
+
 const ChromeXt = GM.ChromeXt;
 if (typeof GM_xmlhttpRequest == "function" && !GM_xmlhttpRequest.strict) {
-  GM_xmlhttpRequest.addCookie = GM_info.script.grants.includes("GM_cookie");
+  GM_xmlhttpRequest.addCookie = loadConfig.grant.includes("GM_cookie");
   Object.defineProperty(GM_xmlhttpRequest, "strict", { value: true });
 }
 // Kotlin separator
@@ -484,7 +483,7 @@ function GM_xmlhttpRequest(details) {
     throw new Error("GM_xmlhttpRequest requires a URL.");
   } else if (GM_xmlhttpRequest.strict) {
     const domain = new URL(details.url).hostname;
-    const connects = GM_info.script.connects;
+    const connects = loadConfig.connect;
     let allowed = location.hostname == domain && connects.includes("self");
     if (!allowed && connects.includes("*")) allowed = true;
     if (!allowed) {
@@ -1043,33 +1042,12 @@ GM.bootstrap = () => {
   if (ChromeXt.scripts.findIndex((e) => e.script.id == GM_info.script.id) != -1)
     return;
 
-  const row = /\/\/\s+@(\S+)([ \t]+(.+))?/g;
-  const meta = GM_info.script;
-  if (typeof meta.code != "function" && typeof ChromeXt != "undefined") {
+  const script = GM_info.script;
+  if (typeof loadConfig.code != "function" && typeof ChromeXt != "undefined") {
     return;
   }
-  let match;
-  while ((match = row.exec(GM_info.scriptMetaStr.trim())) !== null) {
-    if (meta[match[1]]) {
-      if (typeof meta[match[1]] == "string") meta[match[1]] = [meta[match[1]]];
-      meta[match[1]].push(match[3]);
-    } else meta[match[1]] = match[3] ? match[3] : true;
-  }
-  for (const it of [
-    "include",
-    "match",
-    "exlcude",
-    "require",
-    "grant",
-    "connect",
-    "resource",
-  ]) {
-    const plural = it.endsWith("h") ? it + "es" : it + "s";
-    meta[plural] = typeof meta[it] == "string" ? [meta[it]] : meta[it] || [];
-    if (it != "resource") Object.freeze(meta[plural]);
-    delete meta[it];
-  }
-  meta.resources = meta.resources.map((res) => {
+
+  script.resources = loadConfig.resource.map((res) => {
     const split = res.split(/\s+/).filter((it) => it.length > 0);
     const data = { name: split[0], url: split[1] };
     const integrity = data.url.split("#");
@@ -1077,13 +1055,9 @@ GM.bootstrap = () => {
     return data;
   });
 
-  meta["run-at"] = Array.isArray(meta["run-at"])
-    ? meta["run-at"][0]
-    : meta["run-at"] || "document-idle";
+  const grants = loadConfig.grant;
 
-  const grants = meta.grants;
-
-  if (meta["inject-into"] == "page" || grants.includes("none")) {
+  if (loadConfig["inject-into"] === "page" || grants.includes("none")) {
     GM.globalThis = window;
     if (grants.includes("window.close")) {
       // The page may abuse window.close
@@ -1093,10 +1067,10 @@ GM.bootstrap = () => {
     const handler = {
       // A handler to block access to globalThis
       window: { GM },
-      libLoading: meta.requires.length > 0,
+      libLoading: loadConfig.require.length > 0,
       keys: Array.from(ChromeXt.globalKeys),
       deleteProperty(_target, prop) {
-        if (this.libLoading && prop == "__loading__") {
+        if (this.libLoading && prop === "__loading__") {
           this.libLoading = false;
           if (prop in this.window) return;
         }
@@ -1107,7 +1081,7 @@ GM.bootstrap = () => {
           // Avoid redefining global non-enumerable classes, though they are accessible to the getter
           this.window[prop] = value;
         }
-        if (meta["inject-into"] != "content" && meta["sandbox"] != "DOM") {
+        if (loadConfig["inject-into"] !== "content" && loadConfig["sandbox"] !== "DOM") {
           if (this.libLoading) Reflect.set(...arguments);
         }
         return true;
@@ -1141,7 +1115,7 @@ GM.bootstrap = () => {
     storage: GM_info.storage || {},
     broadcast: grants.includes("GM_addValueChangeListener"),
     payload: {
-      id: meta.id,
+      id: script.id,
       instanceId: Math.random(),
     },
     cache: new Set(),
@@ -1180,7 +1154,7 @@ GM.bootstrap = () => {
       return promiseListenerFactory(
         "scriptSyncValue",
         this.payload.instanceId,
-        meta.id,
+        script.id,
         (data, resolve, _reject) => {
           if (data.value == undefined) data.value = default_value;
           this.storage[key] = data.value;
@@ -1245,12 +1219,12 @@ GM.bootstrap = () => {
     GM.ChromeXt = ChromeXt;
   }
 
-  runScript(meta);
+  runScript(script, loadConfig);
 
   function promiseListenerFactory(
     event,
     instanceId,
-    id = meta.id,
+    id = script.id,
     listener = (_data, resolve, _reject) => resolve(true),
     closeCondition = () => true
   ) {
@@ -1269,35 +1243,49 @@ GM.bootstrap = () => {
     });
   }
 
-  function runScript(meta) {
+  function runScript(script, loadConfig) {
     Object.freeze(storageHandler);
     GM_info.storage = new Proxy(storageHandler.storage, storageHandler);
-    if (typeof GM_xmlhttpRequest == "function" && meta.resources.length > 0) {
-      meta.sync_code = meta.code;
-      meta.code = async () => {
-        for (const data of meta.resources) {
+
+    let code = loadConfig.code;
+    loadConfig.code = () => {
+      delete loadConfig.code;
+      delete loadConfig.sync_code;
+      for (let [key] of Object.entries(loadConfig)) {
+        if (typeof loadConfig[key] === "object") {
+          Object.freeze(loadConfig[key]);
+        }
+      }
+      Object.freeze(loadConfig);
+      code();
+    }
+
+    if (typeof GM_xmlhttpRequest == "function" && script.resources.length > 0) {
+      loadConfig.sync_code = loadConfig.code;
+      loadConfig.code = async () => {
+        for (const data of script.resources) {
           data.content = await GM_xmlhttpRequest({ url: data.url });
         }
-        return meta.sync_code();
+        return loadConfig.sync_code();
       };
     }
 
-    switch (meta["run-at"]) {
+    switch (loadConfig["run-at"]) {
       case "document-start":
-        meta.code();
+        loadConfig.code();
         break;
       case "document-end":
         if (document.readyState != "loading") {
-          meta.code();
+          loadConfig.code();
         } else {
-          window.addEventListener("DOMContentLoaded", meta.code);
+          window.addEventListener("DOMContentLoaded", loadConfig.code);
         }
         break;
       default:
         if (document.readyState == "complete") {
-          meta.code();
+          loadConfig.code();
         } else {
-          window.addEventListener("load", meta.code);
+          window.addEventListener("load", loadConfig.code);
         }
     }
 
