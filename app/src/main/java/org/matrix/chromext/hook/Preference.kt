@@ -76,7 +76,7 @@ object PreferenceHook : BaseHook() {
           ?.hookBefore {
             val ctx = Chrome.getContext()
             val sharedPref = ctx.getSharedPreferences("ChromeXt", Context.MODE_PRIVATE)
-            if (sharedPref.getBoolean("gesture_mod", true)) {
+            if (sharedPref.getBoolean("gesture_mod", false)) {
               it.result = Insets.of(0, 0, 0, 0)
               toggleGestureConflict(true)
             } else {
@@ -96,7 +96,7 @@ object PreferenceHook : BaseHook() {
             if (typeMask == WindowInsets.Type.systemGestures()) {
               val ctx = Chrome.getContext()
               val sharedPref = ctx.getSharedPreferences("ChromeXt", Context.MODE_PRIVATE)
-              if (sharedPref.getBoolean("gesture_mod", true)) {
+              if (sharedPref.getBoolean("gesture_mod", false)) {
                 it.result = Insets.of(0, 0, 0, 0)
                 toggleGestureConflict(true)
               } else {

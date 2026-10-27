@@ -86,7 +86,7 @@ object PreferenceProxy {
     setChecked.invoke(
         preferences["gesture_mod"],
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-            sharedPref.getBoolean("gesture_mod", true))
+            sharedPref.getBoolean("gesture_mod", false))
 
     var reset_confirming = 1
     val listeners =
@@ -165,7 +165,7 @@ object PreferenceProxy {
             "gesture_mod" to
                 fun(obj: Any) {
                   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    val enabled = sharedPref.getBoolean("gesture_mod", true)
+                    val enabled = sharedPref.getBoolean("gesture_mod", false)
                     setChecked.invoke(obj, !enabled)
                     with(sharedPref.edit()) {
                       putBoolean("gesture_mod", !enabled)
