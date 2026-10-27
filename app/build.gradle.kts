@@ -1,6 +1,5 @@
 plugins {
   id("com.android.application")
-  id("com.ncorti.ktfmt.gradle")
   id("com.google.devtools.ksp")
   id("androidx.room3")
 }
