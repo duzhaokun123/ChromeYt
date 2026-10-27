@@ -7,10 +7,12 @@ typealias MethodCondition = Method.() -> Boolean
 
 typealias FieldCondition = Field.() -> Boolean
 
+@Deprecated("use Class<*>.findMethod")
 fun findMethod(clz: Class<*>, findSuper: Boolean = false, condition: MethodCondition): Method {
   return findMethodOrNull(clz, findSuper, condition) ?: throw NoSuchMethodException()
 }
 
+@Deprecated("use Class<*>.findMethodOrNull")
 fun findMethodOrNull(
     clz: Class<*>,
     findSuper: Boolean = false,
@@ -44,10 +46,12 @@ fun Any.invokeMethod(vararg args: Any?, condition: MethodCondition): Any? {
   throw NoSuchMethodException()
 }
 
+@Deprecated("use Class<*>.findField")
 fun findField(clz: Class<*>, findSuper: Boolean = false, condition: FieldCondition): Field {
   return findFieldOrNull(clz, findSuper, condition) ?: throw NoSuchFieldException()
 }
 
+@Deprecated("use Class<*>.findFieldOrNull")
 fun findFieldOrNull(clz: Class<*>, findSuper: Boolean = false, condition: FieldCondition): Field? {
   var c = clz
   c.declaredFields

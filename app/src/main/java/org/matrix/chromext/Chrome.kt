@@ -208,6 +208,12 @@ object Chrome {
     }
   }
 
+  @Deprecated(
+    "use loadClass()", ReplaceWith(
+      "loadClass(className)",
+      "org.matrix.chromext.utils.reflection.loadClass"
+    )
+  )
   fun load(className: String): Class<*> {
     return getContext().classLoader.loadClass(className)
   }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+        android:key="ChromeYt"
+        android:title="ChromeYt"
+        android:order="100000">
+        <Preference
+            android:key="ChromeYt_ScriptManager"
+            android:title="Script Manager" />
+    </PreferenceCategory>
+</PreferenceScreen>
