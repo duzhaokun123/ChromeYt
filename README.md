@@ -1,6 +1,6 @@
 # ChromeYt
 
-o0kam1 fork 的 ChromeXt
+o0kam1 fork 的 [ChromeXt](https://github.com/JingMatrix/ChromeXt)
 
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/duzhaokun123/ChromeYt/android.yml?branch=master&event=push&style=flat-square&logo=github)
 
