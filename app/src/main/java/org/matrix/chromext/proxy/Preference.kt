@@ -3,74 +3,61 @@ package org.matrix.chromext.proxy
 import android.content.Context
 import android.os.Build
 import android.os.Environment
-import android.util.Pair
+import android.preference.Preference
+import android.preference.SwitchPreference
 import android.view.View
-import android.view.View.OnClickListener
 import java.io.File
 import java.io.FileReader
 import org.json.JSONObject
+import org.luckypray.dexkit.annotations.DexKitExperimentalApi
 import org.matrix.chromext.Chrome
 import org.matrix.chromext.Listener
 import org.matrix.chromext.script.Local
 import org.matrix.chromext.script.ScriptFileStorage
 import org.matrix.chromext.utils.Log
-import org.matrix.chromext.utils.findField
-import org.matrix.chromext.utils.findMethod
-import org.matrix.chromext.utils.hookBefore
+import org.matrix.chromext.utils.reflection.findField
+import org.matrix.chromext.utils.reflection.loadClass
+import org.matrix.chromext.utils.reflection.toMethod
 
+@OptIn(DexKitExperimentalApi::class)
 object PreferenceProxy {
-  private var clickHooked: Boolean = false
-
-  val developerSettings =
-      Chrome.load("org.chromium.chrome.browser.tracing.settings.DeveloperSettings")
   val chromeTabbedActivity = UserScriptProxy.chromeTabbedActivity
-  val emptyTabObserver =
-      Chrome.load("org.chromium.chrome.browser.login.ChromeHttpAuthHandler").superclass as Class<*>
 
-  private val preference = Chrome.load("androidx.preference.Preference")
-  private val mClickListener =
-      findField(preference) {
-        type == OnClickListener::class.java || type.interfaces.contains(OnClickListener::class.java)
-      }
-  private val setSummary =
-      findMethod(preference) {
-        parameterTypes contentDeepEquals arrayOf(CharSequence::class.java) &&
-            returnType == Void.TYPE
-      }
-  private val twoStatePreference =
-      Chrome.load("org.chromium.components.browser_ui.settings.ChromeSwitchPreference").superclass
-          as Class<*>
-  private val setChecked =
-      findMethod(twoStatePreference, true) {
-        parameterTypes contentDeepEquals arrayOf(Boolean::class.java)
-      }
+  val class_MainSettings =
+    loadClass("Lorg/chromium/chrome/browser/settings/MainSettings;")
 
-  private val preferenceFragmentCompat =
-      loopOverSuperClass(developerSettings.superclass as Class<*>) {
-        (!it.name.startsWith("org.chromium.chrome")) ||
-            it.superclass.name.startsWith("androidx.fragment") ||
-            it.superclass.superclass.name == "java.lang.Object"
-      }
-  val findPreference =
-      findMethod(preferenceFragmentCompat) {
-        parameterTypes contentDeepEquals arrayOf(CharSequence::class.java) &&
-            returnType == preference
-      }
-  val addPreferencesFromResource =
-      preferenceFragmentCompat.declaredMethods.find {
-        it.parameterTypes contentDeepEquals arrayOf(Int::class.java) && it.returnType == Void.TYPE
-        // There exist other methods with the same signatures
-      }!!
+  val class_ChromeBaseSettingsFragment =
+    loadClass("Lorg/chromium/chrome/browser/settings/ChromeBaseSettingsFragment;")
 
-  private fun loopOverSuperClass(base: Class<*>, condition: (Class<*>) -> Boolean): Class<*> {
-    if (condition(base)) {
-      return base
-    } else {
-      return loopOverSuperClass(base.superclass as Class<*>, condition)
-    }
-  }
+  val method_PreferenceFragmentCompat_addPreferencesFromResource = Chrome.dexKitBridge
+    .getMethodDirect("PreferenceFragmentCompat.addPreferencesFromResource") { dexKitBridge ->
+      dexKitBridge.findMethod {
+        matcher {
+          @Suppress("TYPE_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
+          declaredClass(class_ChromeBaseSettingsFragment.superclass)
+          paramTypes(Int::class.javaPrimitiveType)
+          returnType(Void.TYPE)
+        }
+      }.single()
+    }.toMethod()
 
-  fun setClickListener(preferences: Map<String, Any>) {
+  val method_PreferenceFragmentCompat_findPreference = Chrome.dexKitBridge
+    .getMethodDirect("PreferenceFragmentCompat.findPreference") { dexKitBridge ->
+      dexKitBridge.findMethod {
+        matcher {
+          @Suppress("TYPE_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
+          declaredClass(class_ChromeBaseSettingsFragment.superclass)
+          paramTypes(CharSequence::class.java)
+          returnType("androidx.preference.Preference")
+        }
+      }.single()
+    }.toMethod()
+
+  val field_Preference_mClickListener =
+    loadClass("androidx.preference.Preference")
+      .findField { it.type == View.OnClickListener::class.java }
+
+  fun setClickListener(preferences: Map<String, Preference>) {
     val ctx = Chrome.getContext()
     val sharedPref = ctx.getSharedPreferences("ChromeXt", Context.MODE_PRIVATE)
 
@@ -78,12 +65,11 @@ object PreferenceProxy {
     if (Local.eruda_version != null) {
       summary = "Current version: v" + Local.eruda_version
     }
-    setSummary.invoke(preferences["eruda"], summary)
+    preferences["eruda"]!!.summary = summary
 
-    setChecked.invoke(
-        preferences["gesture_mod"],
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-            sharedPref.getBoolean("gesture_mod", false))
+    (preferences["gesture_mod"] as SwitchPreference).isChecked =
+      Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+          sharedPref.getBoolean("gesture_mod", false)
 
     var reset_confirming = 1
     val listeners =
@@ -161,15 +147,16 @@ object PreferenceProxy {
                 },
             "gesture_mod" to
                 fun(obj: Any) {
+                  obj as SwitchPreference
                   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     val enabled = sharedPref.getBoolean("gesture_mod", false)
-                    setChecked.invoke(obj, !enabled)
+                    obj.isChecked = !enabled
                     with(sharedPref.edit()) {
                       putBoolean("gesture_mod", !enabled)
                       apply()
                     }
                   } else {
-                    setChecked.invoke(obj, false)
+                    obj.isChecked = false
                     Log.toast(ctx, "Feature unavailable")
                   }
                 },
@@ -199,36 +186,11 @@ object PreferenceProxy {
                 },
         )
 
-    if (mClickListener.type == OnClickListener::class.java) {
-      mClickListener.setAccessible(true)
-      preferences.forEach { (name, pref) ->
-        mClickListener.set(
-            pref,
-            object : OnClickListener {
-              override fun onClick(v: View) {
-                listeners[name]?.invoke(pref)
-              }
-            })
+    preferences.forEach { (name, pref) ->
+      pref.onPreferenceClickListener = Preference.OnPreferenceClickListener {
+        listeners[name]?.invoke(pref)
+        true
       }
-      mClickListener.setAccessible(false)
-    } else if (!clickHooked) {
-      clickHooked = true
-      val mPreference = mClickListener.type.declaredFields.first()
-      val prefTitles =
-          preferences.entries.map { (name, pref) ->
-            Pair(name, pref.toString().split(" ").take(3).joinToString(" "))
-          }
-      findMethod(mClickListener.type) { name == "onClick" }
-          .hookBefore {
-            prefTitles.forEach(
-                fun(p: Pair<String, String>) {
-                  val pref = mPreference.get(it.thisObject)!!
-                  if (pref.toString().startsWith(p.second)) {
-                    listeners[p.first]?.invoke(pref)
-                    it.result = true
-                  }
-                })
-          }
     }
   }
 }

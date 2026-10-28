@@ -10,112 +10,41 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.WindowInsets
-import org.luckypray.dexkit.annotations.DexKitExperimentalApi
-import java.lang.reflect.Modifier
 import kotlin.math.roundToInt
 import org.matrix.chromext.Chrome
 import org.matrix.chromext.R
-import org.matrix.chromext.Resource
 import org.matrix.chromext.proxy.PreferenceProxy
 import org.matrix.chromext.ui.ScriptManagerActivity
+import org.matrix.chromext.ui.SettingsActivity
 import org.matrix.chromext.utils.*
-import org.matrix.chromext.utils.reflection.findField
 import org.matrix.chromext.utils.reflection.findMethod
-import org.matrix.chromext.utils.reflection.loadClass
-import org.matrix.chromext.utils.reflection.toMethod
 
-@OptIn(DexKitExperimentalApi::class)
 object PreferenceHook : BaseHook() {
-  val class_MainSettings =
-    loadClass("Lorg/chromium/chrome/browser/settings/MainSettings;")
-
-  val class_ChromeBaseSettingsFragment =
-    loadClass("Lorg/chromium/chrome/browser/settings/ChromeBaseSettingsFragment;")
-
-  val method_PreferenceFragmentCompat_addPreferencesFromResource = Chrome.dexKitBridge
-    .getMethodDirect("PreferenceFragmentCompat.addPreferencesFromResource") { dexKitBridge ->
-      dexKitBridge.findMethod {
-        matcher {
-          @Suppress("TYPE_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-          declaredClass(class_ChromeBaseSettingsFragment.superclass)
-          paramTypes(Int::class.javaPrimitiveType)
-          returnType(Void.TYPE)
-        }
-      }.single()
-    }.toMethod()
-
-  val method_PreferenceFragmentCompat_findPreference = Chrome.dexKitBridge
-    .getMethodDirect("PreferenceFragmentCompat.findPreference") { dexKitBridge ->
-      dexKitBridge.findMethod {
-        matcher {
-          @Suppress("TYPE_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-          declaredClass(class_ChromeBaseSettingsFragment.superclass)
-          paramTypes(CharSequence::class.java)
-          returnType("androidx.preference.Preference")
-        }
-      }.single()
-    }.toMethod()
-
-  val field_Preference_mClickListener =
-    loadClass("androidx.preference.Preference")
-      .findField { it.type == View.OnClickListener::class.java }
-
-  private fun getUrl(): String {
-    return Chrome.getUrl()!!
-  }
-
   override fun init() {
-    class_MainSettings
+    val proxy = PreferenceProxy
+
+    proxy.class_MainSettings
       .findMethod(findSuper = false) { it.parameterTypes contentDeepEquals arrayOf(Bundle::class.java) && it.returnType == Void.TYPE }
       .hookAfter { // onCreate
         val thiz = it.thisObject
-        method_PreferenceFragmentCompat_addPreferencesFromResource.invoke(thiz, R.xml.chromeyt_settings)
+        proxy.method_PreferenceFragmentCompat_addPreferencesFromResource.invoke(thiz, R.xml.chromeyt_settings)
         val scriptManagerPreference =
-          method_PreferenceFragmentCompat_findPreference.invoke(thiz, "ChromeYt_ScriptManager")
-        field_Preference_mClickListener.set(scriptManagerPreference, object : View.OnClickListener {
+          proxy.method_PreferenceFragmentCompat_findPreference.invoke(thiz, "ChromeYt_ScriptManager")
+        proxy.field_Preference_mClickListener.set(scriptManagerPreference, object : View.OnClickListener {
           override fun onClick(v: View) {
             val context = v.context
-            context.startActivitySafe(Intent(context, ScriptManagerActivity::class.java))
+            context.startActivity(Intent(context, ScriptManagerActivity::class.java))
+          }
+        })
+        val settingsPreference =
+          proxy.method_PreferenceFragmentCompat_findPreference.invoke(thiz, "ChromeYt_Settings")
+        proxy.field_Preference_mClickListener.set(settingsPreference, object : View.OnClickListener {
+          override fun onClick(v: View) {
+            val context = v.context
+            context.startActivity(Intent(context, SettingsActivity::class.java))
           }
         })
       }
-
-
-    val proxy = PreferenceProxy
-
-    proxy.addPreferencesFromResource
-        // public void addPreferencesFromResource(Int preferencesResId)
-        .hookMethod {
-          before {
-            if (it.thisObject::class.java == proxy.developerSettings) {
-              it.args[0] = R.xml.developer_preferences
-            }
-          }
-
-          after {
-            if (it.thisObject::class.java == proxy.developerSettings) {
-              val refThis = it
-              val preferences = mutableMapOf<String, Any>()
-              arrayOf("eruda", "gesture_mod", "bookmark", "reset", "exit").forEach {
-                preferences[it] = proxy.findPreference.invoke(refThis.thisObject, it)!!
-              }
-              proxy.setClickListener(preferences.toMap())
-            }
-          }
-        }
-
-    findMethod(proxy.developerSettings, true) {
-          Modifier.isStatic(modifiers) &&
-              parameterTypes contentDeepEquals
-                  arrayOf(Context::class.java, String::class.java, Bundle::class.java)
-          // public static Fragment instantiate(Context context,
-          // String fname, @Nullable Bundle args)
-        }
-        .hookAfter {
-          if (it.result::class.java == proxy.developerSettings) {
-            Resource.enrich(it.args[0] as Context)
-          }
-        }
 
     findMethod(proxy.chromeTabbedActivity) { name == "onNewIntent" || name == "onMAMNewIntent" }
         .hookBefore {

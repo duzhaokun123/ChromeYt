@@ -7,5 +7,8 @@
         <Preference
             android:key="ChromeYt_ScriptManager"
             android:title="Script Manager" />
+        <Preference
+            android:key="ChromeYt_Settings"
+            android:title="Settings" />
     </PreferenceCategory>
 </PreferenceScreen>
