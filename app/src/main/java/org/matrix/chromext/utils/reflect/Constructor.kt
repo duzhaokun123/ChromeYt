@@ -1,4 +1,4 @@
-package org.matrix.chromext.utils.reflection
+package org.matrix.chromext.utils.reflect
 
 
 import org.luckypray.dexkit.wrap.DexMethod

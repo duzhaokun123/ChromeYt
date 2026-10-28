@@ -17,7 +17,7 @@ import org.matrix.chromext.proxy.PreferenceProxy
 import org.matrix.chromext.ui.ScriptManagerActivity
 import org.matrix.chromext.ui.SettingsActivity
 import org.matrix.chromext.utils.*
-import org.matrix.chromext.utils.reflection.findMethod
+import org.matrix.chromext.utils.reflect.findMethod
 
 object PreferenceHook : BaseHook() {
   override fun init() {

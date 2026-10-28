@@ -15,9 +15,9 @@ import org.matrix.chromext.Listener
 import org.matrix.chromext.script.Local
 import org.matrix.chromext.script.ScriptFileStorage
 import org.matrix.chromext.utils.Log
-import org.matrix.chromext.utils.reflection.findField
-import org.matrix.chromext.utils.reflection.loadClass
-import org.matrix.chromext.utils.reflection.toMethod
+import org.matrix.chromext.utils.reflect.findField
+import org.matrix.chromext.utils.reflect.loadClass
+import org.matrix.chromext.utils.reflect.toMethod
 
 @OptIn(DexKitExperimentalApi::class)
 object PreferenceProxy {

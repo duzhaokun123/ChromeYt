@@ -211,7 +211,7 @@ object Chrome {
   @Deprecated(
     "use loadClass()", ReplaceWith(
       "loadClass(className)",
-      "org.matrix.chromext.utils.reflection.loadClass"
+      "org.matrix.chromext.utils.reflect.loadClass"
     )
   )
   fun load(className: String): Class<*> {
