@@ -2,7 +2,6 @@ package org.matrix.chromext.ui
 
 import android.app.Activity
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
@@ -22,7 +21,6 @@ import android.widget.EditText
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toolbar
-import androidx.core.graphics.drawable.toDrawable
 import androidx.core.text.inSpans
 import androidx.core.text.italic
 import androidx.core.text.scale
@@ -40,6 +38,8 @@ import org.matrix.chromext.Resource
 import org.matrix.chromext.script.ScriptDbManager
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.ScriptParser
+import org.matrix.chromext.utils.asDrawable
+import org.matrix.chromext.utils.asText
 import org.matrix.chromext.utils.dp2px
 import org.matrix.chromext.utils.loadExternalResource
 
@@ -150,19 +150,16 @@ class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
     val url = et_url.text.toString()
     scope.launch(Dispatchers.IO) {
       runCatching {
-        scriptFile = loadExternalResource(url)!!.decodeToString()
+        scriptFile = loadExternalResource(url).asText()
         val metadata = ScriptParser.parseScriptMetadata(scriptFile!!)
 
         var scriptIcon: Drawable? = null
         if (metadata?.icon != null) {
           runCatching {
-            val data = loadExternalResource(metadata.icon!!)
-            val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
-              ?: throw RuntimeException("image ${metadata.icon} decode failed")
-            scriptIcon = bitmap.toDrawable(resources)
+            scriptIcon = loadExternalResource(metadata.icon!!).asDrawable(resources)
             scriptIcon.setBounds(0, 0, dp2px(24), dp2px(24))
           }.onFailure { e ->
-            Log.w("load script icon failed", e)
+            Log.w(metadata.icon, e)
           }
         }
 

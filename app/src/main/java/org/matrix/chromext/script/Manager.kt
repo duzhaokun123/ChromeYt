@@ -14,6 +14,7 @@ import org.matrix.chromext.db.entity.ScriptStorage
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.ScriptMetadata
 import org.matrix.chromext.utils.ScriptParser
+import org.matrix.chromext.utils.asText
 import org.matrix.chromext.utils.loadExternalResource
 import java.util.UUID
 
@@ -201,7 +202,7 @@ object ScriptDbManager {
     )
     val lib = mutableListOf<String>()
     GlobalScope.launch(Dispatchers.IO) {
-      metadata.require.forEach { runCatching { lib.add(loadExternalResource(it).decodeToString()) } }
+      metadata.require.forEach { runCatching { lib.add(loadExternalResource(it).asText()) } }
     }
     val loadedScript = LoadedScript(
       script = script,

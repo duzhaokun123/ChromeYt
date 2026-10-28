@@ -3,7 +3,6 @@ package org.matrix.chromext.ui
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -17,7 +16,6 @@ import android.widget.ImageView
 import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toolbar
-import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -39,6 +37,7 @@ import org.matrix.chromext.script.UserscriptMigration
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.ScriptMetadata
 import org.matrix.chromext.utils.ScriptParser
+import org.matrix.chromext.utils.asDrawable
 import org.matrix.chromext.utils.loadExternalResource
 
 data class InstallScriptInfo(
@@ -251,12 +250,9 @@ class ScriptManagerActivity : Activity(),
           if (metadata.icon == null) return@mapNotNull null
           async {
             script.id to runCatching {
-              val data = loadExternalResource(metadata.icon!!)
-              val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
-                ?: throw RuntimeException("image ${metadata.icon} decode failed")
-              bitmap.toDrawable(resources)
+              loadExternalResource(metadata.icon!!).asDrawable(resources)
             }.onFailure { e ->
-              Log.w(e)
+              Log.w(metadata.icon, e)
             }
           }
         }.awaitAll().mapNotNull {
