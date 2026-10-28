@@ -18,6 +18,7 @@ import org.matrix.chromext.proxy.PreferenceProxy
 class SettingsPreferenceFragment : PreferenceFragment() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    preferenceManager.sharedPreferencesName = "ChromeXt"
     addPreferencesFromResource(R.xml.settings_preferences)
 
     val preferences = mutableMapOf<String, Preference>()

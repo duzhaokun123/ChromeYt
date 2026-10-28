@@ -23,4 +23,12 @@
         android:key="exit"
         android:title="Disable developer options"
         android:summary="Click to hide Chrome Developer Settings (not recommended)" />
+
+    <ListPreference
+        android:key="devtools_mode"
+        android:title="Devtools show mode"
+        android:entries="@array/devtools_mode_entries"
+        android:entryValues="@array/devtools_mode_entryValues"
+        android:summary="%1$s"
+        android:defaultValue="side" />
 </PreferenceScreen>

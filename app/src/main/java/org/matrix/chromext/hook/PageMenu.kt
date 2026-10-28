@@ -1,5 +1,7 @@
 package org.matrix.chromext.hook
 
+import android.annotation.SuppressLint
+import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
@@ -124,9 +126,29 @@ object PageMenuHook : BaseHook() {
                   setData(devtoolsFrontendUrl)
                   setPackage(Chrome.packageName)
                   addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                  addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT)
+                  when (val mode = ctx.getSharedPreferences("ChromeXt", Context.MODE_PRIVATE).getString("devtools_mode", "side")) {
+                    "side" -> {
+                      addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT)
+                      ctx.startActivity(intent)
+                    }
+                    "freeform" -> {
+                      val options = ActivityOptions.makeBasic().apply {
+                        @SuppressLint("BlockedPrivateApi")
+                        ActivityOptions::class.java
+                          .getDeclaredMethod("setLaunchWindowingMode", Int::class.javaPrimitiveType)
+                          .invoke(this, 5 /* WINDOWING_MODE_FREEFORM */)
+                      }.toBundle()
+                      ctx.startActivity(intent, options)
+                    }
+                    "full" -> {
+                      ctx.startActivity(intent)
+                    }
+                    else -> {
+                      Log.w("unknown devtools_mode $mode")
+                      ctx.startActivity(intent)
+                    }
+                  }
                 }
-                ctx.startActivity(intent)
               }
             }
           }

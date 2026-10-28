@@ -3,4 +3,18 @@
     <string-array name="xposedscope">
         <item>com.android.chrome</item>
     </string-array>
+    <string-array name="devtools_mode_entries">
+        <item>side - show in split screen</item>
+        <item>full - show in new fullscreen task</item>
+        <item>
+            freeform - show as freeform window (if possible)
+            \nbehavior strange may crash systemui
+            \nWINDOWING_MODE_FREEFORM (5) may not OEM\'s float window
+        </item>
+    </string-array>
+    <string-array name="devtools_mode_entryValues">
+        <item>side</item>
+        <item>full</item>
+        <item>freeform</item>
+    </string-array>
 </resources>
