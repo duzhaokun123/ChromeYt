@@ -133,10 +133,14 @@ object PageMenuHook : BaseHook() {
                     }
                     "freeform" -> {
                       val options = ActivityOptions.makeBasic().apply {
-                        @SuppressLint("BlockedPrivateApi")
-                        ActivityOptions::class.java
-                          .getDeclaredMethod("setLaunchWindowingMode", Int::class.javaPrimitiveType)
-                          .invoke(this, 5 /* WINDOWING_MODE_FREEFORM */)
+                        runCatching {
+                          @SuppressLint("BlockedPrivateApi")
+                          ActivityOptions::class.java
+                            .getDeclaredMethod("setLaunchWindowingMode", Int::class.javaPrimitiveType)
+                            .invoke(this, 5 /* WINDOWING_MODE_FREEFORM */)
+                        }.onFailure { e ->
+                          Log.ex(e)
+                        }
                       }.toBundle()
                       ctx.startActivity(intent, options)
                     }
