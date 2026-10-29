@@ -24,8 +24,14 @@ sealed class LoadExternalResourceResult {
   class StringResult(val string: String) : LoadExternalResourceResult()
 }
 
-suspend fun loadExternalResource(url: String): LoadExternalResourceResult {
+suspend fun loadExternalResource(
+  url: String,
+  vararg allowedScheme: String = ["http", "https", "data"]
+): LoadExternalResourceResult {
   val uri = url.toUri()
+  if (uri.scheme !in allowedScheme) {
+    throw RuntimeException("loadExternalResource not allowed scheme ${uri.scheme} for $uri")
+  }
   return when (uri.scheme) {
     "http", "https" -> {
       LoadExternalResourceResult.HttpResponseResult(

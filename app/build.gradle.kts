@@ -69,3 +69,9 @@ dependencies {
 room3 {
   schemaDirectory("$projectDir/schemas")
 }
+
+kotlin {
+  compilerOptions {
+    freeCompilerArgs.add("-Xcollection-literals")
+  }
+}

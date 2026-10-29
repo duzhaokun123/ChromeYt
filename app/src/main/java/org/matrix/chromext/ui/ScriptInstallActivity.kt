@@ -150,7 +150,7 @@ class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
     val url = et_url.text.toString()
     scope.launch(Dispatchers.IO) {
       runCatching {
-        scriptFile = loadExternalResource(url).asText()
+        scriptFile = loadExternalResource(url, allowedScheme = ["http", "https", "content", "file"]).asText()
         val metadata = ScriptParser.parseScriptMetadata(scriptFile!!)
 
         var scriptIcon: Drawable? = null

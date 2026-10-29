@@ -202,7 +202,13 @@ object ScriptDbManager {
     )
     val lib = mutableListOf<String>()
     GlobalScope.launch(Dispatchers.IO) {
-      metadata.require.forEach { runCatching { lib.add(loadExternalResource(it).asText()) } }
+      metadata.require.forEach {
+        runCatching {
+          lib.add(loadExternalResource(it).asText())
+        }.onFailure { e ->
+          Log.ex(e)
+        }
+      }
     }
     val loadedScript = LoadedScript(
       script = script,
