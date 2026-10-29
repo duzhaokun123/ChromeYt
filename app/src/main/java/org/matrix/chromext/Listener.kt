@@ -210,7 +210,7 @@ object Listener {
         }
         val detail = JSONObject(payload)
         val id = detail.getString("id")
-        val uuid = detail.getInt("uuid")
+        val notificationId = detail.getInt("notificationId")
         val title = detail.getString("title")
         val text = detail.getString("text")
         val timeout = detail.getLong("timeout")
@@ -229,8 +229,8 @@ object Listener {
                 .setLocalOnly(true)
                 .setOnlyAlertOnce(true)
         if (detail.optBoolean("onclick")) {
-          builder.setContentIntent(ScriptNotification.newIntent(id, uuid, frameId))
-          tabNotification.put(uuid, currentTab!!)
+          builder.setContentIntent(ScriptNotification.newIntent(id, notificationId, frameId))
+          tabNotification[notificationId] = currentTab!!
         }
         val notificationManager =
             ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -243,10 +243,10 @@ object Listener {
             }.onFailure {
               Log.d("Fail to set notification image: ${it.message}")
             }
-            notificationManager.notify(id, uuid, builder.build())
+            notificationManager.notify(id, notificationId, builder.build())
           }
         } else {
-          notificationManager.notify(id, uuid, builder.build())
+          notificationManager.notify(id, notificationId, builder.build())
         }
         if (detail.optBoolean("highlight")) (ctx as Activity).getWindow().decorView.requestFocus()
       }
@@ -424,30 +424,30 @@ private class ScriptNotification(detail: JSONObject, frameId: String?) : Broadca
 
   companion object {
     const val ACTION_USERSCRIPT = "ChromeXt"
-    const val UUID = "GM_notification"
+    const val NOTIFICATION_ID = "GM_notification"
 
-    fun newIntent(id: String, uuid: Int, frameId: String?): PendingIntent {
+    fun newIntent(id: String, notificationId: Int, frameId: String?): PendingIntent {
       val ctx = Chrome.getContext()
-      val detail = JSONObject(mapOf("id" to id, "uuid" to uuid))
+      val detail = JSONObject(mapOf("id" to id, "notificationId" to notificationId))
       ctx.registerReceiver(ScriptNotification(detail, frameId), IntentFilter(ACTION_USERSCRIPT))
       val intent =
           Intent().apply {
             setAction(ACTION_USERSCRIPT)
-            putExtra(UUID, uuid)
+            putExtra(NOTIFICATION_ID, notificationId)
           }
-      return PendingIntent.getBroadcast(ctx, uuid, intent, PendingIntent.FLAG_IMMUTABLE)
+      return PendingIntent.getBroadcast(ctx, notificationId, intent, PendingIntent.FLAG_IMMUTABLE)
     }
   }
 
   override fun onReceive(ctx: Context, intent: Intent) {
-    if (intent.getAction() == ACTION_USERSCRIPT) {
-      val uuid = intent.getIntExtra(UUID, 0)
-      if (uuid == detail.getInt("uuid")) {
-        val tab = Listener.tabNotification.get(detail.getInt("uuid"))!!
+    if (intent.action == ACTION_USERSCRIPT) {
+      val notificationId = intent.getIntExtra(NOTIFICATION_ID, 0)
+      if (notificationId == detail.getInt("notificationId")) {
+        val tab = Listener.tabNotification[detail.getInt("notificationId")]!!
         val code = "Symbol.${Local.name}.unlock(${Local.key}).post('notification', ${detail});"
         Chrome.evaluateJavascript(listOf(code), tab, frameId)
         ctx.unregisterReceiver(this)
-        Listener.tabNotification.remove(uuid)
+        Listener.tabNotification.remove(notificationId)
       }
     }
   }

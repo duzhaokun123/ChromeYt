@@ -74,12 +74,12 @@ function GM_notification(details, ondone) {
     delete payload.onclick;
   }
   payload.id = GM_info.script.id;
-  payload.uuid = Math.floor(Math.random() * 2 ** 16);
+  payload.notificationId = Math.floor(Math.random() * 2 ** 16);
   if (payload.onclick || typeof payload.ondone == "function") {
     function listener(e) {
       const data = e.detail;
       if (!(e.type == "notification" && data.id == payload.id)) return;
-      if (data.uuid == payload.uuid) {
+      if (data.notificationId == payload.notificationId) {
         e.stopImmediatePropagation();
         ChromeXt.removeEventListener("notification", listener);
         if (payload.onclick) onclick();
