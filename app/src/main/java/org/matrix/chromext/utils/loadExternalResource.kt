@@ -1,6 +1,7 @@
 package org.matrix.chromext.utils
 
 import android.content.res.Resources
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
 import android.net.Uri
@@ -84,9 +85,12 @@ suspend fun LoadExternalResourceResult.asText(fallbackCharset: Charset = Charset
   is LoadExternalResourceResult.StringResult -> string
 }
 
-suspend fun LoadExternalResourceResult.asDrawable(resources: Resources): Drawable {
+suspend fun LoadExternalResourceResult.asBitmap(): Bitmap {
   val data = this.asBytes()
   val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
     ?: throw RuntimeException("bitmap decode failed")
-  return bitmap.toDrawable(resources)
+  return bitmap
 }
+
+suspend inline fun LoadExternalResourceResult.asDrawable(resources: Resources): Drawable =
+  this.asBitmap().toDrawable(resources)

@@ -10,7 +10,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.BitmapFactory
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Handler
@@ -38,7 +37,13 @@ import org.matrix.chromext.utils.isUserScript
 import org.matrix.chromext.utils.matching
 import org.matrix.chromext.utils.parseOrigin
 import androidx.core.net.toUri
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.matrix.chromext.script.storage
+import org.matrix.chromext.utils.asBitmap
+import org.matrix.chromext.utils.loadExternalResource
 import org.matrix.chromext.utils.startActivitySafe
 
 object Listener {
@@ -230,14 +235,14 @@ object Listener {
         val notificationManager =
             ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (detail.has("image")) {
-          Chrome.IO.submit {
+          @OptIn(DelicateCoroutinesApi::class)
+          GlobalScope.launch(Dispatchers.IO) {
             runCatching {
-                  val url = URL(detail.getString("image"))
-                  val connection = url.openConnection() as HttpURLConnection
-                  val bitmap = BitmapFactory.decodeStream(connection.inputStream)
-                  builder.setLargeIcon(Icon.createWithBitmap(bitmap))
-                }
-                .onFailure { Log.d("Fail to set notification image: ${it.message}") }
+              val bitmap = loadExternalResource(detail.getString("image")).asBitmap()
+              builder.setLargeIcon(bitmap)
+            }.onFailure {
+              Log.d("Fail to set notification image: ${it.message}")
+            }
             notificationManager.notify(id, uuid, builder.build())
           }
         } else {
