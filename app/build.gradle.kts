@@ -61,8 +61,8 @@ dependencies {
   implementation("androidx.room3:room3-runtime:3.0.3")
   ksp("androidx.room3:room3-compiler:3.0.3")
   implementation("androidx.core:core-ktx:1.19.1")
-  implementation("io.ktor:ktor-client-core:3.6.0")
-  implementation("io.ktor:ktor-client-android:3.6.0")
+  implementation("io.ktor:ktor-client-core:3.6.1")
+  implementation("io.ktor:ktor-client-android:3.6.1")
   implementation("androidx.browser:browser:1.10.0")
 }
 
