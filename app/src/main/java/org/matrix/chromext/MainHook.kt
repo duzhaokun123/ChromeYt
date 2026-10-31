@@ -42,6 +42,7 @@ class MainHook : IXposedHookLoadPackage, IXposedHookZygoteInit {
               Log.toast(Chrome.getContext(), "Parasitics not load!")
             }
             initHooks(UserScriptHook)
+            ScriptNotification.init()
             if (ContextMenuHook.isInit) return@hookAfter
             runCatching {
                   initHooks(PreferenceHook)

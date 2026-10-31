@@ -44,7 +44,6 @@ android {
             "Internationalization",
             "UnsafeIntentLaunch",
             "SetJavaScriptEnabled",
-            "UnspecifiedRegisterReceiverFlag",
             "Usability:Icons",
         )
   }

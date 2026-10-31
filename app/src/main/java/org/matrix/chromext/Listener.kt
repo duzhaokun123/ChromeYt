@@ -3,13 +3,10 @@ package org.matrix.chromext
 import android.app.Activity
 import android.app.Notification
 import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Handler
@@ -53,7 +50,6 @@ object Listener {
       mapOf(
           "devtools" to listOf("websocket"),
       )
-  val tabNotification = mutableMapOf<Int, Any>()
 
   private fun syncSharedPreference(
       payload: String,
@@ -229,8 +225,8 @@ object Listener {
                 .setLocalOnly(true)
                 .setOnlyAlertOnce(true)
         if (detail.optBoolean("onclick")) {
-          builder.setContentIntent(ScriptNotification.newIntent(id, notificationId, frameId))
-          tabNotification[notificationId] = currentTab!!
+          builder.setContentIntent(ScriptNotification.newPendingIntent(id, notificationId, currentTab!!, frameId))
+          builder.setDeleteIntent(ScriptNotification.newDeletePendingIntent(id, notificationId))
         }
         val notificationManager =
             ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -415,40 +411,5 @@ object Listener {
       }
     }
     return callback
-  }
-}
-
-private class ScriptNotification(detail: JSONObject, frameId: String?) : BroadcastReceiver() {
-  private val detail = detail
-  private val frameId = frameId
-
-  companion object {
-    const val ACTION_USERSCRIPT = "ChromeXt"
-    const val NOTIFICATION_ID = "GM_notification"
-
-    fun newIntent(id: String, notificationId: Int, frameId: String?): PendingIntent {
-      val ctx = Chrome.getContext()
-      val detail = JSONObject(mapOf("id" to id, "notificationId" to notificationId))
-      ctx.registerReceiver(ScriptNotification(detail, frameId), IntentFilter(ACTION_USERSCRIPT))
-      val intent =
-          Intent().apply {
-            setAction(ACTION_USERSCRIPT)
-            putExtra(NOTIFICATION_ID, notificationId)
-          }
-      return PendingIntent.getBroadcast(ctx, notificationId, intent, PendingIntent.FLAG_IMMUTABLE)
-    }
-  }
-
-  override fun onReceive(ctx: Context, intent: Intent) {
-    if (intent.action == ACTION_USERSCRIPT) {
-      val notificationId = intent.getIntExtra(NOTIFICATION_ID, 0)
-      if (notificationId == detail.getInt("notificationId")) {
-        val tab = Listener.tabNotification[detail.getInt("notificationId")]!!
-        val code = "Symbol.${Local.name}.unlock(${Local.key}).post('notification', ${detail});"
-        Chrome.evaluateJavascript(listOf(code), tab, frameId)
-        ctx.unregisterReceiver(this)
-        Listener.tabNotification.remove(notificationId)
-      }
-    }
   }
 }
