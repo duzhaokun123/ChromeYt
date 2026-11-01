@@ -226,7 +226,6 @@ object Listener {
                 .setOnlyAlertOnce(true)
         if (detail.optBoolean("onclick")) {
           builder.setContentIntent(ScriptNotification.newPendingIntent(id, notificationId, currentTab!!, frameId))
-          builder.setDeleteIntent(ScriptNotification.newDeletePendingIntent(id, notificationId))
         }
         val notificationManager =
             ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
