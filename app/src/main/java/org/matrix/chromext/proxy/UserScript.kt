@@ -1,13 +1,18 @@
 package org.matrix.chromext.proxy
 
 import android.net.Uri
+import android.os.BaseBundle
 import org.luckypray.dexkit.annotations.DexKitExperimentalApi
 import org.matrix.chromext.Chrome
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.findField
 import org.matrix.chromext.utils.findMethod
 import org.matrix.chromext.utils.findMethodOrNull
+import org.matrix.chromext.utils.reflect.invokeMethod
+import org.matrix.chromext.utils.reflect.toClass
+import org.matrix.chromext.utils.reflect.toMethod
 
+@OptIn(DexKitExperimentalApi::class)
 object UserScriptProxy {
   // It is possible to do a HTTP POST with LoadUrlParams Class
   // grep org/chromium/content_public/common/ResourceRequestBody to get setPostData in
@@ -32,7 +37,6 @@ object UserScriptProxy {
    * mIsLoading is used in method stopLoading, before calling
    * Lorg/chromium/content_public/browser/WebContents;->stop()V
    */
-  @OptIn(DexKitExperimentalApi::class)
   val mIsLoading = Chrome.dexKitBridge.getFieldDirect("TabImpl.mIsLoading") { dexKitBridge ->
     val stopLoading = dexKitBridge.findMethod {
       matcher {
@@ -58,6 +62,39 @@ object UserScriptProxy {
 
   val kMaxURLChars = 2097152
 
+
+  val class_TabWindowManager = Chrome.dexKitBridge.getClassDirect("TabWindowManager") { dexKitBridge ->
+    dexKitBridge.findClass {
+      matcher {
+        usingStrings("Android.MultiWindowMode.AssertIndicesMatch")
+      }
+    }.single()
+  }.toClass()
+
+  val method_TabWindowManagerSingleton_getInstance = Chrome.dexKitBridge.getMethodDirect("TabWindowManagerSingleton.getInstance") { dexKitBridge ->
+    dexKitBridge.findMethod {
+      matcher {
+        paramCount(0)
+        returnType(class_TabWindowManager)
+        addCaller { // Lorg/chromium/chrome/browser/ChromeTabbedActivity;->saveToBaseBundle(Landroid/os/BaseBundle;)V
+          declaredClass(chromeTabbedActivity)
+          paramTypes(BaseBundle::class.java)
+          returnType(Void.TYPE)
+        }
+      }
+    }.single()
+  }.toMethod()
+
+  val method_TabWindowManager_getTabById = Chrome.dexKitBridge.getMethodDirect("TabWindowManager.getTabById") { dexKitBridge ->
+    dexKitBridge.findMethod {
+      matcher {
+        declaredClass(class_TabWindowManager)
+        paramTypes(Int::class.javaPrimitiveType)
+        returnType("org.chromium.chrome.browser.tab.Tab")
+      }
+    }.single()
+  }.toMethod()
+
   private fun loadUrl(url: String, tab: Any? = Chrome.getTab()) {
     if (!Chrome.checkTab(tab)) return
     loadUrl.invoke(tab, newLoadUrlParams(url))
@@ -65,6 +102,12 @@ object UserScriptProxy {
 
   fun getTabId(tab: Any): String {
     return getId(tab)!!.toString()
+  }
+
+  fun getTabById(id: Int): Any? {
+    return method_TabWindowManagerSingleton_getInstance.invoke(null)!!.invokeMethod(
+      method_TabWindowManager_getTabById, id
+    )
   }
 
   fun newLoadUrlParams(url: String): Any {

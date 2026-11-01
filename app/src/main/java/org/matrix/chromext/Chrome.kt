@@ -241,6 +241,10 @@ object Chrome {
     return UserScriptProxy.getTabId(getTab(tab)!!)
   }
 
+  fun getTabById(id: Int): Any? {
+    return UserScriptProxy.getTabById(id)
+  }
+
   fun injectFrames(tab: Any? = null) {
     val url = getUrl(tab)!!
     IO.submit {

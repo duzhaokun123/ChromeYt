@@ -39,6 +39,7 @@ fun findMethodOrNull(
   return null
 }
 
+@Deprecated("use find then invoke")
 fun Any.invokeMethod(vararg args: Any?, condition: MethodCondition): Any? {
   findMethodOrNull(this::class.java, true, condition)?.let {
     return it(this, *args)
