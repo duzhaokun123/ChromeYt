@@ -54,7 +54,7 @@ object DevSessions {
   }
 
   fun new(
-      tabId: String,
+      tabId: Int,
       tag: String?,
       condition: (DevToolClient) -> Boolean = { true }
   ): DevToolClient {

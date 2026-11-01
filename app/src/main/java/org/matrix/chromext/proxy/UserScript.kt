@@ -9,6 +9,7 @@ import org.matrix.chromext.utils.findField
 import org.matrix.chromext.utils.findMethod
 import org.matrix.chromext.utils.findMethodOrNull
 import org.matrix.chromext.utils.reflect.invokeMethod
+import org.matrix.chromext.utils.reflect.invokeMethodAs
 import org.matrix.chromext.utils.reflect.toClass
 import org.matrix.chromext.utils.reflect.toMethod
 
@@ -30,7 +31,6 @@ object UserScriptProxy {
       Chrome.load("org.chromium.chrome.browser.ChromeTabbedActivity")
   val tabImpl =
       Chrome.load("org.chromium.chrome.browser.tab.TabImpl")
-  private val getId = findMethod(tabImpl) { name == "getId" }
   val mTab = findField(tabWebContentsDelegateAndroidImpl) { type == tabImpl }
 
   /**
@@ -95,13 +95,16 @@ object UserScriptProxy {
     }.single()
   }.toMethod()
 
+  val method_TabImpl_getId =
+    tabImpl.getDeclaredMethod("getId")
+
   private fun loadUrl(url: String, tab: Any? = Chrome.getTab()) {
     if (!Chrome.checkTab(tab)) return
     loadUrl.invoke(tab, newLoadUrlParams(url))
   }
 
-  fun getTabId(tab: Any): String {
-    return getId(tab)!!.toString()
+  fun getTabId(tab: Any): Int {
+    return tab.invokeMethodAs(method_TabImpl_getId)
   }
 
   fun getTabById(id: Int): Any? {

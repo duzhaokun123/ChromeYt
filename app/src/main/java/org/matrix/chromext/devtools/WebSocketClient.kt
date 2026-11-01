@@ -12,7 +12,7 @@ import org.matrix.chromext.hook.UserScriptHook
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.randomString
 
-class DevToolClient(tabId: String, tag: String? = null) : LocalSocket() {
+class DevToolClient(tabId: Int, tag: String? = null) : LocalSocket() {
 
   val tabId = tabId
   val tag = tag

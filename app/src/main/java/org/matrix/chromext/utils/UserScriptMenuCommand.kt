@@ -19,7 +19,7 @@ object UserScriptMenuCommand {
     return id and 0x0000FFFF
   }
 
-  private val deferreds = ConcurrentHashMap<String, CompletableDeferred<List<MenuCommandItem>>>()
+  private val deferreds = ConcurrentHashMap<Int, CompletableDeferred<List<MenuCommandItem>>>()
 
   fun getDeferredMenuCommandsForTab(tab: Any?): CompletableDeferred<List<MenuCommandItem>> {
     val tabId = Chrome.getTabId(tab)

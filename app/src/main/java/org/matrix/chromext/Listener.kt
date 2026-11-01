@@ -306,9 +306,8 @@ object Listener {
           }
           return true
         }
-        val url = Chrome.getUrl(currentTab)
         Chrome.IO.submit {
-          val tabId = Chrome.getTabId(currentTab, url)
+          val tabId = Chrome.getTabId(currentTab)
           val client = DevToolClient(tabId, "cookie")
           Chrome.IO.submit { client.listen { if (!checkResult(it)) client.close() } }
           client.command(null, "Network.enable", JSONObject())
@@ -365,7 +364,7 @@ object Listener {
       }
       "websocket" -> {
         val detail = JSONObject(payload)
-        val targetTabId = detail.getString("targetTabId")
+        val targetTabId = detail.getString("targetTabId").toInt()
         var target = DevSessions.get { it.tabId == targetTabId && it.tag == "transit" }
         if (detail.has("message")) {
           val message = JSONObject(detail.getString("message"))

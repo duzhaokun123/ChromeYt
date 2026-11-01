@@ -237,7 +237,7 @@ object Chrome {
     }
   }
 
-  fun getTabId(tab: Any?, url: String? = null): String {
+  fun getTabId(tab: Any?): Int {
     return UserScriptProxy.getTabId(getTab(tab)!!)
   }
 
@@ -248,7 +248,7 @@ object Chrome {
   fun injectFrames(tab: Any? = null) {
     val url = getUrl(tab)!!
     IO.submit {
-      val tabId = getTabId(tab, url)
+      val tabId = getTabId(tab)
       wakeUpDevTools()
       var client = DevSessions.new(tabId, "page")
       DevSessions.add(client)
@@ -354,7 +354,7 @@ object Chrome {
     if (framesGranted && frameId == null) injectFrames(webView)
   }
 
-  private fun evaluateJavascriptDevTools(codes: List<String>, tabId: String, bypassCSP: Boolean) {
+  private fun evaluateJavascriptDevTools(codes: List<String>, tabId: Int, bypassCSP: Boolean) {
     wakeUpDevTools()
     var client = DevSessions.new(tabId, "page")
     codes.forEach { client.evaluateJavascript(it) }
@@ -373,9 +373,8 @@ object Chrome {
   ) {
     if (codes.size == 0) return
     if (frameId != null || forceDevTools) {
-      val url = getUrl(tab)
       IO.submit {
-        val tabId = getTabId(tab, url)
+        val tabId = getTabId(tab)
         if (frameId != null) {
           var client = DevSessions.new(tabId, "page")
           val params = JSONObject().put("frameId", frameId)
@@ -418,13 +417,13 @@ object Chrome {
     }
   }
 
-  private fun filterTabs(condition: JSONObject.() -> Boolean): List<String> {
+  private fun filterTabs(condition: JSONObject.() -> Boolean): List<Int> {
     wakeUpDevTools()
     val pages = getInspectPages()!!
-    val tabs = mutableListOf<String>()
+    val tabs = mutableListOf<Int>()
     for (i in 0 until pages.length()) {
       val tab = pages.getJSONObject(i)
-      if (condition.invoke(tab)) tabs.add(tab.getString("id"))
+      if (condition.invoke(tab)) tabs.add(tab.getInt("id"))
     }
     return tabs
   }
