@@ -30,27 +30,23 @@ object PreferenceProxy {
     loadClass("Lorg/chromium/chrome/browser/settings/ChromeBaseSettingsFragment;")
 
   val method_PreferenceFragmentCompat_addPreferencesFromResource = Chrome.dexKitBridge
-    .getMethodDirect("PreferenceFragmentCompat.addPreferencesFromResource") { dexKitBridge ->
-      dexKitBridge.findMethod {
-        matcher {
-          @Suppress("TYPE_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-          declaredClass(class_ChromeBaseSettingsFragment.superclass)
-          paramTypes(Int::class.javaPrimitiveType)
-          returnType(Void.TYPE)
-        }
-      }.single()
+    .getMethod {
+      matcher {
+        @Suppress("TYPE_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
+        declaredClass(class_ChromeBaseSettingsFragment.superclass)
+        paramTypes(Int::class.javaPrimitiveType)
+        returnType(Void.TYPE)
+      }
     }.toMethod()
 
   val method_PreferenceFragmentCompat_findPreference = Chrome.dexKitBridge
-    .getMethodDirect("PreferenceFragmentCompat.findPreference") { dexKitBridge ->
-      dexKitBridge.findMethod {
-        matcher {
-          @Suppress("TYPE_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-          declaredClass(class_ChromeBaseSettingsFragment.superclass)
-          paramTypes(CharSequence::class.java)
-          returnType("androidx.preference.Preference")
-        }
-      }.single()
+    .getMethod {
+      matcher {
+        @Suppress("TYPE_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
+        declaredClass(class_ChromeBaseSettingsFragment.superclass)
+        paramTypes(CharSequence::class.java)
+        returnType("androidx.preference.Preference")
+      }
     }.toMethod()
 
   val field_Preference_mClickListener =

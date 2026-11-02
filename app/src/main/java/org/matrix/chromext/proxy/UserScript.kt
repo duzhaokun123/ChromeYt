@@ -63,36 +63,30 @@ object UserScriptProxy {
   val kMaxURLChars = 2097152
 
 
-  val class_TabWindowManager = Chrome.dexKitBridge.getClassDirect("TabWindowManager") { dexKitBridge ->
-    dexKitBridge.findClass {
-      matcher {
-        usingStrings("Android.MultiWindowMode.AssertIndicesMatch")
-      }
-    }.single()
+  val class_TabWindowManager = Chrome.dexKitBridge.getClass {
+    matcher {
+      usingStrings("Android.MultiWindowMode.AssertIndicesMatch")
+    }
   }.toClass()
 
-  val method_TabWindowManagerSingleton_getInstance = Chrome.dexKitBridge.getMethodDirect("TabWindowManagerSingleton.getInstance") { dexKitBridge ->
-    dexKitBridge.findMethod {
-      matcher {
-        paramCount(0)
-        returnType(class_TabWindowManager)
-        addCaller { // Lorg/chromium/chrome/browser/ChromeTabbedActivity;->saveToBaseBundle(Landroid/os/BaseBundle;)V
-          declaredClass(chromeTabbedActivity)
-          paramTypes(BaseBundle::class.java)
-          returnType(Void.TYPE)
-        }
+  val method_TabWindowManagerSingleton_getInstance = Chrome.dexKitBridge.getMethod {
+    matcher {
+      paramCount(0)
+      returnType(class_TabWindowManager)
+      addCaller { // Lorg/chromium/chrome/browser/ChromeTabbedActivity;->saveToBaseBundle(Landroid/os/BaseBundle;)V
+        declaredClass(chromeTabbedActivity)
+        paramTypes(BaseBundle::class.java)
+        returnType(Void.TYPE)
       }
-    }.single()
+    }
   }.toMethod()
 
-  val method_TabWindowManager_getTabById = Chrome.dexKitBridge.getMethodDirect("TabWindowManager.getTabById") { dexKitBridge ->
-    dexKitBridge.findMethod {
-      matcher {
-        declaredClass(class_TabWindowManager)
-        paramTypes(Int::class.javaPrimitiveType)
-        returnType("org.chromium.chrome.browser.tab.Tab")
-      }
-    }.single()
+  val method_TabWindowManager_getTabById = Chrome.dexKitBridge.getMethod {
+    matcher {
+      declaredClass(class_TabWindowManager)
+      paramTypes(Int::class.javaPrimitiveType)
+      returnType("org.chromium.chrome.browser.tab.Tab")
+    }
   }.toMethod()
 
   val method_TabImpl_getId =
