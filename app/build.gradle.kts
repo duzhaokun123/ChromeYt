@@ -12,8 +12,8 @@ android {
     applicationId = "io.github.duzhaokun123.chromeyt"
     minSdk = 23
     targetSdk = 37
-    versionCode = 18
-    versionName = "4.0.1"
+    versionCode = 19
+    versionName = "4.1.0"
 
     buildConfigField("long", "BUILD_TIME", "${System.currentTimeMillis()}L")
     buildConfigField("String", "SCRIPT_HANDLER_NAME", "\"ChromeYt\"")
