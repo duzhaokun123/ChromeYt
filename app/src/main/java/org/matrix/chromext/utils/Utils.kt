@@ -39,3 +39,15 @@ fun Context.startActivitySafe(intent: Intent): Throwable? {
 }
 
 fun Collection<*>.toJSONArray() = JSONArray(this)
+
+fun Long.toReadableSize(): String {
+  if (this < 1024) return "$this B"
+  val units = arrayOf("KiB", "MiB", "GiB", "TiB")
+  var size = this.toDouble()
+  var unit = -1
+  while (size >= 1024 && unit < units.size - 1) {
+    size /= 1024
+    unit++
+  }
+  return String.format(null, "%.2f %s", size, units[unit])
+}

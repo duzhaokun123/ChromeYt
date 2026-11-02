@@ -39,6 +39,7 @@ import org.matrix.chromext.utils.ScriptMetadata
 import org.matrix.chromext.utils.ScriptParser
 import org.matrix.chromext.utils.asDrawable
 import org.matrix.chromext.utils.loadExternalResource
+import org.matrix.chromext.utils.toReadableSize
 
 data class InstallScriptInfo(
   val script: Script,
@@ -108,7 +109,7 @@ class ScriptManagerActivity : Activity(),
             |id: ${script.id}
             |uuid: ${script.uuid}
             |enabled: ${script.enabled}
-            |fileSize: ${if (fileSize != -1L) fileSize else "file lost!"}
+            |fileSize: ${if (fileSize != -1L) fileSize.toReadableSize() else "file lost!"}
             |
             |${metadata.localeDescription}
           """.trimMargin()
