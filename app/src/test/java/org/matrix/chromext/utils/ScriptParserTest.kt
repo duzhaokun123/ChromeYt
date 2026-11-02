@@ -315,6 +315,17 @@ class ScriptParserTest {
   }
 
   @Test
+  fun `splitScript accepts a BOM glued to the opening marker`() {
+    val input = "\uFEFF" + block("@name Demo", "@match https://a.example/*") + "\nconsole.log('hi');\n"
+
+    val metadata = ScriptParser.parseScriptMetadata(input)
+
+    assertNotNull(metadata)
+    assertEquals("Demo", metadata!!.name)
+    assertEquals(listOf("https://a.example/*"), metadata.match)
+  }
+
+  @Test
   fun `splitScript returns only the metadata block and drops the preamble`() {
     val preamble = "\uFEFF\n\n// 许可证头\n// 与元数据无关\n"
     val body = block("@name Demo", "@match https://a.example/*")
