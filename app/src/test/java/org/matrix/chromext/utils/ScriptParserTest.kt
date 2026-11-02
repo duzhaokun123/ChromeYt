@@ -103,12 +103,15 @@ class ScriptParserTest {
     assertEquals(listOf("name" to "Demo"), metadata.raw)
   }
 
+  /**
+   * 没有 UserScript 块时整体不解析，避免块外注释被当成元数据
+   */
   @Test
   fun `parseMetadata ignores lines that are not line comments`() {
-    val metadata = ScriptParser.parseMetadata("// @name Demo\n@match https://a.example/*\n")
+    val withoutBlock = ScriptParser.parseMetadata("// @name Demo\n@match https://a.example/*\n")
 
-    assertEquals("Demo", metadata.name)
-    assertTrue(metadata.match.isEmpty())
+    assertNull(withoutBlock.name)
+    assertTrue(withoutBlock.match.isEmpty())
   }
 
   @Test
