@@ -56,12 +56,24 @@ object ScriptParser {
     val raw = mutableListOf<Pair<String, String?>>()
 
     val lines = metadata.split("\n")
-    for (i in 0 until lines.size) {
-      var line = lines[i].trim()
+    var metadataBlock = false
+    for (line in lines) {
+      var line = line.trim()
       if (!line.startsWith("//")) {
         continue
       }
       line = line.removePrefix("//").trim()
+      if (line == "==UserScript==") {
+        metadataBlock = true
+        continue
+      }
+      if (line == "==/UserScript==") {
+        metadataBlock = false
+        break
+      }
+      if (!metadataBlock) {
+        continue
+      }
       if (line.isEmpty() || line.first() != '@') {
         continue
       }
@@ -87,6 +99,9 @@ object ScriptParser {
         }
       }
     }
+    if (metadataBlock) {
+      Log.w("parseMetadata parsed end mark missing data")
+    }
 
     return ScriptMetadata(
       match = match,
@@ -100,14 +115,35 @@ object ScriptParser {
   }
 
   /**
+   * split script to meta code, drop garbage
    * @return meta, code
    */
   fun splitScript(input: String): Pair<String?, String?>? {
-    val blockMatchGroup =
-      Regex("""(?<metablock>[\S\s]*?// ==UserScript==\r?\n[\S\s]*?\r?\n// ==/UserScript==\s+)(?<code>[\S\s]*)""")
-        .matchEntire(input)?.groups
-    if (blockMatchGroup == null) return null
-    return blockMatchGroup[1]?.value to blockMatchGroup[2]?.value
+    val lines = input.split("\n")
+    var metadataBegin = -1
+    var metadataEnd = -1
+    for (i in 0 until lines.size) {
+      var line = lines[i].trim()
+      if (!line.startsWith("//")) {
+        continue
+      }
+      line = line.removePrefix("//").trim()
+      if (line == "==UserScript==") {
+        metadataBegin = i
+        continue
+      }
+      if (line == "==/UserScript==") {
+        metadataEnd = i
+        break
+      }
+    }
+    if (metadataBegin == -1 || metadataEnd == -1 || metadataEnd <= metadataBegin) {
+      Log.e("splitScript bad script metadataBegin $metadataBegin metadataEnd $metadataEnd")
+      return null
+    }
+    val meta = lines.slice(metadataBegin..metadataEnd).joinToString("\n")
+    val code = lines.slice(metadataEnd + 1 until lines.size).joinToString("\n")
+    return meta to code
   }
 
   fun parseScriptMetadata(input: String): ScriptMetadata? {
