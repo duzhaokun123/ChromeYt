@@ -63,6 +63,7 @@ dependencies {
   implementation("io.ktor:ktor-client-core:3.6.0")
   implementation("io.ktor:ktor-client-android:3.6.0")
   implementation("androidx.browser:browser:1.10.0")
+  testImplementation("junit:junit:4.13.2")
 }
 
 room3 {

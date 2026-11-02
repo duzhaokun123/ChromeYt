@@ -33,6 +33,10 @@ jobs:
         with:
           dependency-graph: ${{ env.IS_RELEASE_BUILD && 'generate-and-submit' || 'disabled' }}
 
+      - name: Run unit tests
+        continue-on-error: true
+        run: ./gradlew app:testDebugUnitTest
+
       - name: Build debug APK
         run: ./gradlew app:assembleDebug
 
