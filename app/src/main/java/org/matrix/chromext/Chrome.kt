@@ -423,7 +423,10 @@ object Chrome {
     val tabs = mutableListOf<Int>()
     for (i in 0 until pages.length()) {
       val tab = pages.getJSONObject(i)
-      if (condition.invoke(tab)) tabs.add(tab.getInt("id"))
+      if (condition.invoke(tab)) {
+        val id = tab.getString("id").toIntOrNull() ?: continue
+        tabs.add(id)
+      }
     }
     return tabs
   }

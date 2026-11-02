@@ -110,7 +110,7 @@ object PageMenuHook : BaseHook() {
             } else {
               val id = Chrome.getTabId(null)
               val page = pages.toList().find { page ->
-                page.getInt("id") == id
+                page.getString("id") == id.toString()
               }
               if (page == null) {
                 withContext(Dispatchers.Main) {
