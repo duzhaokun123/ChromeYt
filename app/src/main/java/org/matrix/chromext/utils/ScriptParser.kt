@@ -55,7 +55,7 @@ object ScriptParser {
     val connect = mutableListOf<String>()
     val raw = mutableListOf<Pair<String, String?>>()
 
-    val lines = metadata.split("\n")
+    val lines = metadata.removePrefix("\uFEFF").split("\n")
     var metadataBlock = false
     for (line in lines) {
       var line = line.trim()
@@ -119,7 +119,7 @@ object ScriptParser {
    * @return meta, code
    */
   fun splitScript(input: String): Pair<String?, String?>? {
-    val lines = input.split("\n")
+    val lines = input.removePrefix("\uFEFF").split("\n")
     var metadataBegin = -1
     var metadataEnd = -1
     for (i in 0 until lines.size) {
