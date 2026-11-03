@@ -12,10 +12,7 @@ import org.matrix.chromext.hook.UserScriptHook
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.randomString
 
-class DevToolClient(tabId: Int, tag: String? = null) : LocalSocket() {
-
-  val tabId = tabId
-  val tag = tag
+class DevToolClient(val pageId: String, val tag: String? = null) : LocalSocket() {
   private var cspBypassed = false
   private var id = 1
   private var listening = false
@@ -26,18 +23,18 @@ class DevToolClient(tabId: Int, tag: String? = null) : LocalSocket() {
     connectDevTools(this)
     val request =
         arrayOf(
-            "GET /devtools/page/${tabId} HTTP/1.1",
+            "GET /devtools/page/${pageId} HTTP/1.1",
             "Connection: Upgrade",
             "Upgrade: websocket",
             "Sec-WebSocket-Version: 13",
             "Sec-WebSocket-Key: ${Base64.encodeToString(randomString(16).toByteArray(), Base64.DEFAULT).trim()}")
-    Log.d("Start inspecting tab ${tabId}")
+    Log.d("Start inspecting page ${pageId}")
     outputStream.write((request.joinToString("\r\n") + "\r\n\r\n").toByteArray())
     val buffer = ByteArray(DEFAULT_BUFFER_SIZE / 8)
     inputStream.read(buffer)
     if (String(buffer).split("\r\n")[0] != "HTTP/1.1 101 WebSocket Protocol Handshake") {
       close()
-      Log.d("Fail to inspect tab ${tabId} with response\n" + String(buffer), true)
+      Log.d("Fail to inspect page ${pageId} with response\n" + String(buffer), true)
     }
   }
 
@@ -131,7 +128,7 @@ class DevToolClient(tabId: Int, tag: String? = null) : LocalSocket() {
         }
         .onFailure {
           if (!isClosed()) {
-            Log.ex(it, "Listening at tab ${tabId}")
+            Log.ex(it, "Listening at page ${pageId}")
           }
         }
     close()

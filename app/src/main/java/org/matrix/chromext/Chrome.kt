@@ -250,7 +250,7 @@ object Chrome {
     IO.submit {
       val tabId = getTabId(tab)
       wakeUpDevTools()
-      var client = DevSessions.new(tabId, "page")
+      var client = DevSessions.new(tabId.toString(), "page")
       DevSessions.add(client)
       val duplicated = client.isPageEnabled(true)
       if (duplicated) return@submit
@@ -353,7 +353,7 @@ object Chrome {
 
   private fun evaluateJavascriptDevTools(codes: List<String>, tabId: Int, bypassCSP: Boolean) {
     wakeUpDevTools()
-    var client = DevSessions.new(tabId, "page")
+    var client = DevSessions.new(tabId.toString(), "page")
     codes.forEach { client.evaluateJavascript(it) }
     // Bypass CSP is only effective after reloading
     client.bypassCSP(bypassCSP)
@@ -373,7 +373,7 @@ object Chrome {
       IO.submit {
         val tabId = getTabId(tab)
         if (frameId != null) {
-          var client = DevSessions.new(tabId, "page")
+          var client = DevSessions.new(tabId.toString(), "page")
           val params = JSONObject().put("frameId", frameId)
           codes.forEach {
             client.command(

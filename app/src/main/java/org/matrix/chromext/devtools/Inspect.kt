@@ -54,22 +54,22 @@ object DevSessions {
   }
 
   fun new(
-      tabId: Int,
+      pageId: String,
       tag: String?,
       condition: (DevToolClient) -> Boolean = { true }
   ): DevToolClient {
     var client =
-        get { it.tabId == tabId && it.tag == tag && condition(it) } ?: DevToolClient(tabId, tag)
+        get { it.pageId == pageId && it.tag == tag && condition(it) } ?: DevToolClient(pageId, tag)
     if (client.isClosed()) {
       hitDevTools().close()
-      client = DevToolClient(tabId)
+      client = DevToolClient(pageId)
     }
     return client
   }
 
   fun add(client: DevToolClient?) {
     if (client == null) return
-    val cached = clients.find { it.tabId == client.tabId }
+    val cached = clients.find { it.pageId == client.pageId }
     if (cached != null) clients.remove(cached)
     clients.add(client)
   }
