@@ -14,10 +14,13 @@ import kotlin.math.roundToInt
 import org.matrix.chromext.Chrome
 import org.matrix.chromext.R
 import org.matrix.chromext.proxy.PreferenceProxy
+import org.matrix.chromext.ui.InspectActivity
 import org.matrix.chromext.ui.ScriptManagerActivity
 import org.matrix.chromext.ui.SettingsActivity
 import org.matrix.chromext.utils.*
 import org.matrix.chromext.utils.reflect.findMethod
+import org.matrix.chromext.utils.reflect.invokeMethodAs
+import org.matrix.chromext.utils.reflect.setFieldValue
 
 object PreferenceHook : BaseHook() {
   override fun init() {
@@ -28,22 +31,18 @@ object PreferenceHook : BaseHook() {
       .hookAfter { // onCreate
         val thiz = it.thisObject
         proxy.method_PreferenceFragmentCompat_addPreferencesFromResource.invoke(thiz, R.xml.chromeyt_settings)
-        val scriptManagerPreference =
-          proxy.method_PreferenceFragmentCompat_findPreference.invoke(thiz, "ChromeYt_ScriptManager")
-        proxy.field_Preference_mClickListener.set(scriptManagerPreference, object : View.OnClickListener {
-          override fun onClick(v: View) {
-            val context = v.context
-            context.startActivity(Intent(context, ScriptManagerActivity::class.java))
-          }
-        })
-        val settingsPreference =
-          proxy.method_PreferenceFragmentCompat_findPreference.invoke(thiz, "ChromeYt_Settings")
-        proxy.field_Preference_mClickListener.set(settingsPreference, object : View.OnClickListener {
-          override fun onClick(v: View) {
-            val context = v.context
-            context.startActivity(Intent(context, SettingsActivity::class.java))
-          }
-        })
+        setPreferenceOnClickListener(thiz, "ChromeYt_ScriptManager") { v ->
+          val context = v.context
+          context.startActivity(Intent(context, ScriptManagerActivity::class.java))
+        }
+        setPreferenceOnClickListener(thiz, "ChromeYt_Settings") { v ->
+          val context = v.context
+          context.startActivity(Intent(context, SettingsActivity::class.java))
+        }
+        setPreferenceOnClickListener(thiz, "ChromeYt_Inspect") { v ->
+          val context = v.context
+          context.startActivity(Intent(context, InspectActivity::class.java))
+        }
       }
 
     findMethod(proxy.chromeTabbedActivity) { name == "onNewIntent" || name == "onMAMNewIntent" }
@@ -109,5 +108,15 @@ object PreferenceHook : BaseHook() {
         decoView.setSystemGestureExclusionRects(listOf(Rect(0, 0, 0, 0)))
       }
     }
+  }
+
+  private fun setPreferenceOnClickListener(
+    preferenceFragmentCompat: Any, key: String, listener: View.OnClickListener
+  ) {
+    val preference = preferenceFragmentCompat.invokeMethodAs<Any>(
+      PreferenceProxy.method_PreferenceFragmentCompat_findPreference,
+      key
+    )
+    preference.setFieldValue(PreferenceProxy.field_Preference_mClickListener, listener)
   }
 }

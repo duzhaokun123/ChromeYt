@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.matrix.chromext.Chrome
+import org.matrix.chromext.ui.InspectActivity
 import org.matrix.chromext.ui.ScriptConfigActivity
 import org.matrix.chromext.ui.ScriptInstallActivity
 import org.matrix.chromext.ui.ScriptManagerActivity
@@ -90,6 +91,7 @@ object ParasiticsStub {
       ScriptConfigActivity::class.java,
       ScriptInstallActivity::class.java,
       SettingsActivity::class.java,
+      InspectActivity::class.java,
     ).map { it.name }
 
     @JvmStatic

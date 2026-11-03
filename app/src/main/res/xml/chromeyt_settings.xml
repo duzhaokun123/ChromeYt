@@ -10,5 +10,8 @@
         <Preference
             android:key="ChromeYt_Settings"
             android:title="Settings" />
+        <Preference
+            android:key="ChromeYt_Inspect"
+            android:title="Inspect" />
     </PreferenceCategory>
 </PreferenceScreen>
