@@ -122,8 +122,8 @@ object ScriptParser {
     val lines = input.removePrefix("\uFEFF").split("\n")
     var metadataBegin = -1
     var metadataEnd = -1
-    for (i in 0 until lines.size) {
-      var line = lines[i].trim()
+    for ((i, line) in lines.withIndex()) {
+      var line = line.trim()
       if (!line.startsWith("//")) {
         continue
       }

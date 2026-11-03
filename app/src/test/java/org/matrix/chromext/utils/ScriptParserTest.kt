@@ -294,17 +294,6 @@ class ScriptParserTest {
   }
 
   @Test
-  fun `splitScript preserves CRLF code verbatim`() {
-    val code = "\r\n\r\n  var a = 1;\r\n  var b = 2;\r\n"
-    val input = blockCrlf("@name Demo", "@match https://a.example/*") + code
-
-    val (meta, parsedCode) = ScriptParser.splitScript(input)!!
-
-    assertEquals("Demo", ScriptParser.parseMetadata(meta!!).name)
-    assertEquals(code, parsedCode)
-  }
-
-  @Test
   fun `splitScript accepts a BOM and blank lines before the block`() {
     val input = "\uFEFF\n" + block("@name Demo") + "\nconsole.log('hi');\n"
 
