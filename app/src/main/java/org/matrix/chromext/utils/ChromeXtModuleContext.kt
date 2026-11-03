@@ -1,18 +1,9 @@
 package org.matrix.chromext.utils
 
-import android.annotation.SuppressLint
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.res.Resources
 import android.view.View
-import net.bytebuddy.ByteBuddy
-import net.bytebuddy.android.AndroidClassLoadingStrategy
-import net.bytebuddy.implementation.MethodDelegation
-import net.bytebuddy.implementation.bind.annotation.AllArguments
-import net.bytebuddy.implementation.bind.annotation.Origin
-import net.bytebuddy.implementation.bind.annotation.RuntimeType
-import net.bytebuddy.matcher.ElementMatchers
-import org.matrix.chromext.Chrome
-import java.lang.reflect.Method
 import java.util.Collections
 
 
@@ -23,91 +14,49 @@ import java.util.Collections
  * val id = ChromeXtModuleContext.addStringRes("some string")
  *
  * // some code need a context to load resource
- * context = ChromeXtModuleContext.instance()
+ * context = ChromeXtModuleContext.ofContext(baseContext)
  * context.getString(id)
  *
  * // remeber to clean up after use
  * ChromeXtModuleContext.removeStringRes(id)
  * ```
  */
-@SuppressLint("StaticFieldLeak")
 object ChromeXtModuleContext {
-  private var context: Context? = null
-  private var resources: Resources? = null
-  private val strategy by lazy {
-    AndroidClassLoadingStrategy.Wrapping(Chrome.getContext().getDir("generated", Context.MODE_PRIVATE))
-  }
-  private val byteBuddy by lazy { ByteBuddy() }
-
   private val stringRes = Collections.synchronizedSet(hashSetOf<Pair<Int, String>>())
 
-  private fun createContext() {
-    context = byteBuddy
-      .subclass(Context::class.java)
-      .method(ElementMatchers.isMethod())
-      .intercept(MethodDelegation.to(object {
-        @RuntimeType
-        fun intercept( @Origin method: Method, @AllArguments args: Array<Any?>): Any? {
-//          Log.d(method, args)
-          return when (method.name) {
-            "getResources" -> {
-              if (resources == null) {
-                createResources()
-              }
-              resources
-            }
-            else -> method.invoke(Chrome.getContext(), *args)
-          }
-        }
-      }))
-      .make()
-      .load(this::class.java.classLoader, strategy)
-      .loaded.newInstance()
-  }
-
-  private fun createResources() {
-    resources = byteBuddy
-      .subclass(Resources::class.java)
-      .method(ElementMatchers.isMethod())
-      .intercept(MethodDelegation.to(object {
-        @RuntimeType
-        fun intercept( @Origin method: Method, @AllArguments args: Array<Any?>): Any? {
-//          Log.d(method, args)
-          when (method.name) {
-            "getString" -> {
-              stringRes.find { (id, _) ->
-                id == args[0]
-              }?.let { (_, res) ->
-                return res
-              }
+  fun ofContext(context: Context): Context {
+    val resources = context.resources
+    return object : ContextWrapper(context) {
+      val resourcesWrapper = object : Resources(resources.assets, resources.displayMetrics, resources.configuration) {
+        override fun getString(getId: Int): String {
+          synchronized(stringRes) {
+            stringRes.find { (id, _) ->
+              id == getId
+            }?.let { (_, res) ->
+              return res
             }
           }
-          return method.invoke(Chrome.getContext().resources, *args)
+          return super.getString(getId)
         }
-      }))
-      .make()
-      .load(this::class.java.classLoader, strategy)
-      .loaded.let {
-        // don't use newInstance as sdk say:
-        // private Resources() {...}
-        Unsafe.instance.allocateInstance(it)
       }
-  }
 
-  fun instance(): Context {
-    if (context == null) {
-      createContext()
+      override fun getResources(): Resources {
+        return resourcesWrapper
+      }
     }
-    return context!!
   }
 
   fun addStringRes(res: String): Int {
     val id = View.generateViewId()
-    stringRes.add(id to res)
+    synchronized(stringRes) {
+      stringRes.add(id to res)
+    }
     return id
   }
 
   fun removeStringRes(id: Int) {
-    stringRes.removeIf { res -> res.first == id }
+    synchronized(stringRes) {
+      stringRes.removeIf { res -> res.first == id }
+    }
   }
 }

@@ -347,6 +347,7 @@ object PageMenuHook : BaseHook() {
         Log.w("createUserScriptMenus wait timeout for ${Chrome.getTabId(currentTab)}")
         return@launch
       }
+      val context = ChromeXtModuleContext.ofContext(Chrome.getContext())
       val usedTemplateIds = mutableSetOf<Int>()
       commands
         .groupBy { item -> item.scriptId }
@@ -357,7 +358,7 @@ object PageMenuHook : BaseHook() {
               ChromeXtModuleContext.addStringRes(item.title).also { usedTemplateIds.add(it) }
             val model = PageMenuProxy.method_AppMenuItemUtils_buildModelForStandardMenuItem.invoke(
               null,
-              ChromeXtModuleContext.instance(),
+              context,
               theme,
               item.id,
               titleId,
@@ -376,7 +377,7 @@ object PageMenuHook : BaseHook() {
           val titleId = ChromeXtModuleContext.addStringRes(name).also { usedTemplateIds.add(it) }
           val model = PageMenuProxy.method_AppMenuItemUtils_buildModelForMenuItemWithSubmenu.invoke(
             null,
-            ChromeXtModuleContext.instance(),
+            context,
             theme,
             Resources.ID_NULL,
             titleId,
