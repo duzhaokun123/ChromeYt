@@ -2,7 +2,7 @@ name: Android CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "**" ]
     tags: [ "*" ]
   pull_request:
     branches: [ "master" ]
@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 env:
-  IS_RELEASE_BUILD: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || github.ref_type == 'tag') }}
+  SUBMIT_DEPENDENCY_GRAPH: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || github.ref_type == 'tag') }}
 
 jobs:
   build:
@@ -31,7 +31,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
-          dependency-graph: ${{ env.IS_RELEASE_BUILD && 'generate-and-submit' || 'disabled' }}
+          dependency-graph: ${{ env.SUBMIT_DEPENDENCY_GRAPH && 'generate-and-submit' || 'disabled' }}
 
       - name: Run unit tests
         continue-on-error: true
@@ -50,28 +50,30 @@ jobs:
           if-no-files-found: error
           archive: false
 
+      - name: Decode signing keystore
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+        run: |
+          if [ -n "$SIGNING_KEY" ]; then
+            echo "$SIGNING_KEY" | base64 -d > keystore.jks
+          else
+            echo "SIGNING_KEY is not available, release APK will be signed with the debug key"
+          fi
+
       - name: Build release APK
+        env:
+          KEYSTORE: keystore.jks
+          ALIAS: ${{ secrets.ALIAS }}
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew app:assembleRelease
 
-      - name: Sign release APK
-        if: env.IS_RELEASE_BUILD == 'true'
-        id: sign_app
-        uses: noriban/sign-android-release@master
-        with:
-          releaseDirectory: app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
+      - name: Rename release APK
+        run: mv app/build/outputs/apk/release/app-release.apk app/build/ChromeYt_release.apk
 
-      - name: Rename signed APK
-        if: env.IS_RELEASE_BUILD == 'true'
-        run: mv "${{ steps.sign_app.outputs.signedReleaseFile }}" app/build/ChromeYt_signed.apk
-
-      - name: Upload signed APK
-        if: env.IS_RELEASE_BUILD == 'true'
+      - name: Upload release APK
         uses: actions/upload-artifact@v7
         with:
-          path: app/build/ChromeYt_signed.apk
+          path: app/build/ChromeYt_release.apk
           if-no-files-found: error
           archive: false

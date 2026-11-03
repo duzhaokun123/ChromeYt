@@ -1,8 +1,21 @@
+import java.util.Properties
+
 plugins {
   id("com.android.application")
   id("com.google.devtools.ksp")
   id("androidx.room3")
 }
+
+val localProperties =
+    Properties().apply {
+      rootProject.file("local.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
+    }
+
+fun localOrEnv(name: String, env: String): String? =
+    localProperties.getProperty(name) ?: System.getenv(env)
+
+val releaseKeystore =
+    localOrEnv("keystore", "KEYSTORE")?.let { rootProject.file(it) }
 
 android {
   compileSdk = 37
@@ -21,11 +34,25 @@ android {
 
   buildFeatures { buildConfig = true }
 
+  signingConfigs {
+    if (releaseKeystore != null) {
+      create("release") {
+        storeFile = releaseKeystore
+        storePassword = localOrEnv("storePassword", "KEY_STORE_PASSWORD")
+        keyAlias = localOrEnv("keyAlias", "ALIAS")
+        keyPassword = localOrEnv("keyPassword", "KEY_PASSWORD")
+      }
+    }
+  }
+
   buildTypes {
     release {
       isShrinkResources = true
       isMinifyEnabled = true
       proguardFiles("proguard-rules.pro")
+      signingConfig =
+          if (releaseKeystore != null) signingConfigs.getByName("release")
+          else signingConfigs.getByName("debug")
     }
   }
 
