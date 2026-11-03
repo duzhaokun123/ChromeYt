@@ -245,7 +245,7 @@ object Chrome {
     return UserScriptProxy.getTabById(id)
   }
 
-  fun injectFrames(tab: Any? = null) {
+  fun injectFrames(tab: Any) {
     val url = getUrl(tab)!!
     IO.submit {
       val tabId = getTabId(tab)
@@ -270,7 +270,7 @@ object Chrome {
           } else if (frameId != null && frames.containsKey(frameId)) {
             val frameUrl = frames.get(frameId)
             Handler(getContext().mainLooper).post {
-              ScriptDbManager.invokeScript(frameUrl!!, tab, frameId)
+              injectChromeXtScript(frameUrl!!, tab, frameId)
             }
             frames.remove(frameId)
           }
@@ -279,10 +279,9 @@ object Chrome {
     }
   }
 
-  fun injectChromeXtScript(url: String, webView: Any? = null, frameId: String? = null) {
+  fun injectChromeXtScript(url: String, tab: Any, frameId: String? = null) {
     val codes = mutableListOf<String>()
     val path = resolveContentUrl(url)
-    val webviewSettings = webView?.invokeMethod { name == "getSettings" }
 
     codes.add(Local.initChromeXt)
 
@@ -300,7 +299,6 @@ object Chrome {
     if (isDevToolsFrontEnd(url)) {
       trustedPage = true
       codes.add(Local.customizeDevTool)
-      webviewSettings?.invokeMethod(null) { name == "setUserAgentString" }
     } else {
       val origin = parseOrigin(url)
       if (origin != null) {
@@ -328,7 +326,6 @@ object Chrome {
     }
 
     codes.add("//# sourceURL=local://ChromeXt/init" + if (frameId == null) "" else "/" + frameId)
-    webviewSettings?.invokeMethod(true) { name == "setJavaScriptEnabled" }
     val initScript = codes.joinToString("\n")
 
     val asyncEvaluation = bypassSandbox || frameId != null
@@ -336,7 +333,7 @@ object Chrome {
 
     if (!asyncEvaluation)
       evaluateJavascript(
-        listOf(initScript), webView, frameId, bypassSandbox, bypassSandbox)
+        listOf(initScript), tab, frameId, bypassSandbox, bypassSandbox)
     codes.clear()
     if (asyncEvaluation) codes.add(initScript)
     if (runUserScript) {
@@ -346,12 +343,12 @@ object Chrome {
           if ("frames" in it.options.grant) framesGranted = true
           GM.bootstrap(it, codes)
         }
-      if (!asyncEvaluation) evaluateJavascript(codes, webView, frameId)
+      if (!asyncEvaluation) evaluateJavascript(codes, tab, frameId)
     }
     if (asyncEvaluation)
-      evaluateJavascript(codes, webView, frameId, bypassSandbox, bypassSandbox)
+      evaluateJavascript(codes, tab, frameId, bypassSandbox, bypassSandbox)
 
-    if (framesGranted && frameId == null) injectFrames(webView)
+    if (framesGranted && frameId == null) injectFrames(tab)
   }
 
   private fun evaluateJavascriptDevTools(codes: List<String>, tabId: Int, bypassCSP: Boolean) {

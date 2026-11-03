@@ -39,7 +39,7 @@ object UserScriptHook : BaseHook() {
           }
           val isLoading = proxy.mIsLoading.get(tab) as Boolean
           if (!url.startsWith("chrome") && isLoading) {
-            ScriptDbManager.invokeScript(url)
+            Chrome.injectChromeXtScript(url, tab)
           }
         }
 

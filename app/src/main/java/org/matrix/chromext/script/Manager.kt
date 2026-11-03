@@ -112,16 +112,6 @@ object ScriptDbManager {
     return true
   }
 
-  @Deprecated(
-    "use Chrome.injectChromeXtScript", ReplaceWith(
-      "Chrome.injectChromeXtScript(url, webView, frameId)",
-      "org.matrix.chromext.Chrome"
-    )
-  )
-  fun invokeScript(url: String, webView: Any? = null, frameId: String? = null) {
-    Chrome.injectChromeXtScript(url, webView, frameId)
-  }
-
   fun updateScriptStorage() {
     runBlocking {
       db.scriptStorageDao().upsert(
