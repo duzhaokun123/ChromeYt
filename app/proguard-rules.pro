@@ -3,6 +3,11 @@
 }
 -keepattributes SourceFile,LineNumberTable
 
+# Keep every first-party name (package, class, method and field) readable in
+# release stack traces, while still allowing R8 to remove unused code. Line
+# numbers are kept above so traces stay readable without retracing.
+-keep,allowshrinking class org.matrix.chromext.** { *; }
+
 # Byte Buddy generates classes at runtime and resolves members and annotations
 # reflectively. Obfuscation is not supported by Byte Buddy.
 -keepattributes RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations,AnnotationDefault,Signature,InnerClasses,EnclosingMethod
