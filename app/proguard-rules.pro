@@ -18,3 +18,6 @@
 # constructor and lifecycle methods instead of listing individual classes.
 -keep class * extends android.app.Activity { *; }
 
+-keepclassmembers class io.github.qauxv.lifecycle.Parasitics {
+    boolean __stub_hooked;
+}
