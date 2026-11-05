@@ -38,6 +38,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import org.matrix.chromext.module.ScriptNotification
 import org.matrix.chromext.script.storage
 import org.matrix.chromext.utils.asBitmap
 import org.matrix.chromext.utils.loadExternalResource

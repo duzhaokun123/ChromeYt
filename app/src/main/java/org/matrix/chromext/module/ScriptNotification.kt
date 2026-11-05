@@ -1,4 +1,4 @@
-package org.matrix.chromext
+package org.matrix.chromext.module
 
 import android.annotation.SuppressLint
 import android.app.PendingIntent
@@ -10,32 +10,29 @@ import android.net.Uri
 import android.os.Build
 import androidx.core.net.toUri
 import org.json.JSONObject
+import org.matrix.chromext.Chrome
+import org.matrix.chromext.MainHook
+import org.matrix.chromext.module.base.BaseModule
 import org.matrix.chromext.script.Local
 
-object ScriptNotification : BroadcastReceiver() {
+object ScriptNotification : BaseModule("script_notification") {
   const val ACTION_USERSCRIPT_NOTIFICATION = "org.matrix.chromext.ACTION_USERSCRIPT_NOTIFICATION"
   const val EXTRA_NOTIFICATION_ID = "org.matrix.chromext.EXTRA_NOTIFICATION_ID"
   const val EXTRA_SCRIPT_ID = "org.matrix.chromext.EXTRA_SCRIPT_ID"
   const val EXTRA_TAB_ID = "org.matrix.chromext.EXTRA_TAB_ID"
   const val EXTRA_FRAME_ID = "org.matrix.chromext.EXTRA_FRAME_ID"
 
-  var isInit: Boolean = false
-    private set
-
-
-  fun init() {
-    if (isInit) return
-    val context = Chrome.getContext().applicationContext
+  override fun load() {
+    val context = MainHook.application
     val intentFilter = IntentFilter().apply {
       addAction(ACTION_USERSCRIPT_NOTIFICATION)
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      context.registerReceiver(this, intentFilter, Context.RECEIVER_NOT_EXPORTED)
+      context.registerReceiver(Receiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
     } else {
       @SuppressLint("UnspecifiedRegisterReceiverFlag")
-      context.registerReceiver(this, intentFilter)
+      context.registerReceiver(Receiver, intentFilter)
     }
-    isInit = true
   }
 
   fun newPendingIntent(scriptId: String, notificationId: Int, tab: Any, frameId: String?): PendingIntent {
@@ -54,23 +51,25 @@ object ScriptNotification : BroadcastReceiver() {
     return PendingIntent.getBroadcast(context, notificationId, intent, PendingIntent.FLAG_IMMUTABLE)
   }
 
-  override fun onReceive(context: Context, intent: Intent) {
-    if (intent.action != ACTION_USERSCRIPT_NOTIFICATION) return
-    val scriptId = intent.getStringExtra(EXTRA_SCRIPT_ID) ?: return
-    if (!intent.hasExtra(EXTRA_NOTIFICATION_ID)) return
-    val notificationId =
-      intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1)
-    if (!intent.hasExtra(EXTRA_TAB_ID)) return
-    val tabId =
-      intent.getIntExtra(EXTRA_TAB_ID, -1)
-    val tab = Chrome.getTabById(tabId) ?: return
-    val frameId = intent.getStringExtra(EXTRA_FRAME_ID)
-    val detail = JSONObject().apply {
-      put("id", scriptId)
-      put("notificationId", notificationId)
+  object Receiver: BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+      if (intent.action != ACTION_USERSCRIPT_NOTIFICATION) return
+      val scriptId = intent.getStringExtra(EXTRA_SCRIPT_ID) ?: return
+      if (!intent.hasExtra(EXTRA_NOTIFICATION_ID)) return
+      val notificationId =
+        intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1)
+      if (!intent.hasExtra(EXTRA_TAB_ID)) return
+      val tabId =
+        intent.getIntExtra(EXTRA_TAB_ID, -1)
+      val tab = Chrome.getTabById(tabId) ?: return
+      val frameId = intent.getStringExtra(EXTRA_FRAME_ID)
+      val detail = JSONObject().apply {
+        put("id", scriptId)
+        put("notificationId", notificationId)
+      }
+      Chrome.evaluateJavascript(
+        ["Symbol.${Local.name}.unlock(${Local.key}).post('notification', ${detail});"], tab, frameId
+      )
     }
-    Chrome.evaluateJavascript(
-      ["Symbol.${Local.name}.unlock(${Local.key}).post('notification', ${detail});"], tab, frameId
-    )
   }
 }

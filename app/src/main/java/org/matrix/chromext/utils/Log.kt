@@ -7,7 +7,9 @@ import de.robv.android.xposed.XposedBridge
 import java.lang.ref.WeakReference
 import org.matrix.chromext.BuildConfig
 import org.matrix.chromext.TAG
+import org.matrix.chromext.utils.Toast.normalizeToSting
 
+@Deprecated("use Logger")
 object Log {
   private var lastToast: WeakReference<Toast>? = null
 
@@ -45,6 +47,7 @@ object Log {
     XposedBridge.log("ChromeXt exception caught: [${msg}] " + thr.toString())
   }
 
+  @Deprecated("use Toast.show(message)")
   fun toast(context: Context, vararg messages: Any?) {
     val msg = messages.normalizeToSting()
     this.lastToast?.get()?.cancel()
@@ -52,15 +55,5 @@ object Log {
     val toast = Toast.makeText(context, msg, duration)
     toast.show()
     this.lastToast = WeakReference(toast)
-  }
-
-  private fun Array<*>.normalizeToSting(): String {
-    return this.joinToString(separator = " ") {
-      when (it) {
-        is Throwable -> it.stackTraceToString()
-        is Array<*> -> it.contentDeepToString()
-        else -> it.toString()
-      }
-    }
   }
 }

@@ -8,11 +8,6 @@ import android.net.Uri
 import android.net.http.HttpResponseCache
 import android.os.Build
 import android.os.Handler
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.cache.HttpCache
-import io.ktor.client.plugins.cache.storage.FileStorage
-import kotlinx.io.files.Path
 import java.io.File
 import java.io.FileReader
 import java.lang.ref.WeakReference
@@ -27,6 +22,8 @@ import org.matrix.chromext.devtools.DevSessions
 import org.matrix.chromext.devtools.getInspectPages
 import org.matrix.chromext.devtools.hitDevTools
 import org.matrix.chromext.hook.UserScriptHook
+import org.matrix.chromext.module.core.DexKit
+import org.matrix.chromext.module.core.KtorClient
 import org.matrix.chromext.proxy.UserScriptProxy
 import org.matrix.chromext.script.GM
 import org.matrix.chromext.script.Local
@@ -56,20 +53,20 @@ object Chrome {
 
   val IO = Executors.newCachedThreadPool()
   val cookieStore = CookieManager().getCookieStore()
+
+  @Deprecated("use DexKit.dexKitBridge",
+    ReplaceWith("DexKit.dexKitBridge", "org.matrix.chromext.module.core.DexKit")
+  )
   @OptIn(DexKitExperimentalApi::class)
   val dexKitBridge: DexKitCacheBridge.RecyclableBridge
-    get() = DexKitCacheBridge.create("$packageName:$version:${BuildConfig.BUILD_TIME}", getContext().applicationContext.classLoader)
-  val httpClient by lazy {
-    HttpClient {
-      expectSuccess = true
-      install(HttpTimeout) {
-        requestTimeoutMillis = 10_000
-      }
-      install(HttpCache) {
-        publicStorage(FileStorage(Path(getContext().cacheDir.resolve("ChromeXt").path)))
-      }
-    }
-  }
+    get() = DexKit.dexKitBridge
+
+  @Deprecated(
+    "use KtorClient.client",
+    ReplaceWith("KtorClient.client", "org.matrix.chromext.module.core.KtorClient")
+  )
+  val httpClient
+    get() = KtorClient.client
 
   fun init(ctx: Context, packageName: String? = null) {
     val initialized = mContext != null
@@ -86,7 +83,6 @@ object Chrome {
 
     setupHttpCache(ctx)
     saveRedirectCookie()
-    setupDexKit()
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val groupId = "org.matrix.chromext"
       val group = NotificationChannelGroup(groupId, "ChromeXt")
@@ -146,26 +142,6 @@ object Chrome {
         }
   }
 
-  @OptIn(DexKitExperimentalApi::class)
-  private fun setupDexKit() {
-    System.loadLibrary("dexkit")
-    DexKitCacheBridge.idleTimeoutMillis = 5_000
-    DexKitCacheBridge.cachePolicy = DexKitCacheBridge.CachePolicy(
-      cacheSuccess = true,
-      failurePolicy = DexKitCacheBridge.CacheFailurePolicy.ALL
-    )
-    DexKitCacheBridge.init(JsonCache(getContext().cacheDir.resolve("dexkit.json")))
-    DexKitCacheBridge.addListener(object : DexKitCacheBridge.CacheBridgeListener() {
-      override fun onBridgeCreated(appTag: String) {
-        Log.d("created bridge: $appTag")
-      }
-
-      override fun onBridgeReleased(appTag: String) {
-        Log.d("released bridge: $appTag")
-      }
-    })
-  }
-
   fun storeCoookies(
       request: XMLHttpRequest,
       headerFields: Map<String?, List<String>>,
@@ -191,6 +167,7 @@ object Chrome {
     }
   }
 
+  @Deprecated("use MainHook.application for Application")
   fun getContext(): Context {
     val activity =
         getTab()?.invokeMethod { name == "getContext" || returnType == Context::class.java }
@@ -458,6 +435,7 @@ object Resource {
     module_path = packagePath
   }
 
+  @Deprecated("needn't call")
   fun enrich(ctx: Context) {
     // Log.d("Enriching context for " + ctx.toString())
     ctx.assets.invokeMethod(module_path!!) { name == "addAssetPath" }

@@ -61,7 +61,7 @@ import java.lang.reflect.Proxy;
 import java.util.List;
 
 // source compat
-import org.matrix.chromext.utils.ParasiticsStub.*;
+import org.matrix.chromext.module.core.ActivityHijack.ParasiticsStub.*;
 
 /**
  * Inject module Activities into host process and resources injection.
