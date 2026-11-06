@@ -50,7 +50,7 @@ jobs:
           if-no-files-found: error
           archive: false
 
-      - name: Decode signing keystore
+      - name: Build release APK
         env:
           SIGNING_KEY: ${{ env.IS_MASTER_PUSH == 'true' && secrets.SIGNING_KEY || '' }}
           ALIAS: ${{ env.IS_MASTER_PUSH == 'true' && secrets.ALIAS || '' }}
@@ -59,16 +59,11 @@ jobs:
         run: |
           if [ -n "$SIGNING_KEY" ]; then
             echo "$SIGNING_KEY" | base64 -d > keystore.jks
-            echo "KEYSTORE=keystore.jks" >> "$GITHUB_ENV"
-            echo "ALIAS=$ALIAS" >> "$GITHUB_ENV"
-            echo "KEY_STORE_PASSWORD=$KEY_STORE_PASSWORD" >> "$GITHUB_ENV"
-            echo "KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+            export KEYSTORE=keystore.jks
           else
             echo "SIGNING_KEY is not available, release APK will be signed with the debug key"
           fi
-
-      - name: Build release APK
-        run: ./gradlew app:assembleRelease
+          ./gradlew app:assembleRelease
 
       - name: Rename release APK
         run: mv app/build/outputs/apk/release/app-release.apk app/build/ChromeYt_release.apk
