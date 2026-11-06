@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 env:
-  SUBMIT_DEPENDENCY_GRAPH: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || github.ref_type == 'tag') }}
+  IS_MASTER_PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
 
 jobs:
   build:
@@ -31,7 +31,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
-          dependency-graph: ${{ env.SUBMIT_DEPENDENCY_GRAPH && 'generate-and-submit' || 'disabled' }}
+          dependency-graph: ${{ env.IS_MASTER_PUSH == 'true' && 'generate-and-submit' || 'disabled' }}
 
       - name: Run unit tests
         continue-on-error: true
@@ -50,23 +50,20 @@ jobs:
           if-no-files-found: error
           archive: false
 
-      - name: Decode signing keystore
+      - name: Build release APK
         env:
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_KEY: ${{ env.IS_MASTER_PUSH == 'true' && secrets.SIGNING_KEY || '' }}
+          ALIAS: ${{ env.IS_MASTER_PUSH == 'true' && secrets.ALIAS || '' }}
+          KEY_STORE_PASSWORD: ${{ env.IS_MASTER_PUSH == 'true' && secrets.KEY_STORE_PASSWORD || '' }}
+          KEY_PASSWORD: ${{ env.IS_MASTER_PUSH == 'true' && secrets.KEY_PASSWORD || '' }}
         run: |
           if [ -n "$SIGNING_KEY" ]; then
             echo "$SIGNING_KEY" | base64 -d > keystore.jks
+            export KEYSTORE=keystore.jks
           else
             echo "SIGNING_KEY is not available, release APK will be signed with the debug key"
           fi
-
-      - name: Build release APK
-        env:
-          KEYSTORE: keystore.jks
-          ALIAS: ${{ secrets.ALIAS }}
-          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew app:assembleRelease
+          ./gradlew app:assembleRelease
 
       - name: Rename release APK
         run: mv app/build/outputs/apk/release/app-release.apk app/build/ChromeYt_release.apk
