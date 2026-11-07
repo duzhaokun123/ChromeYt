@@ -2,6 +2,7 @@ package org.matrix.chromext.utils
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Ignore
 import org.junit.Test
 import org.matrix.chromext.db.entity.Script
 import org.matrix.chromext.script.LoadedScript
@@ -110,11 +111,43 @@ class UrlMatchTest {
     assertMatch("https://example.com/", "https://*/*")
     assertMatch("https://a.b.example.org/", "https://*/*")
     assertMatch("http://127.0.0.1:8080/", "*://*/*")
+    assertMatch("http://[::1]:8080/", "*://*/*")
+    assertMatch("https://[2001:db8::1]/", "https://*/*")
   }
 
   @Test
   fun `match host comparison is case insensitive`() {
     assertMatch("https://EXAMPLE.com/", "https://example.COM/*")
+  }
+
+  @Test
+  fun `match supports an IPv6 literal host`() {
+    assertMatch("http://[::1]/", "http://[::1]/*")
+    assertMatch("http://[::1]/a", "http://[::1]/*")
+    assertMatch("https://[2607:f8b0:4005:805::200e]/", "https://[2607:f8b0:4005:805::200e]/*")
+    assertNoMatch("http://[::1]/", "http://[::2]/*")
+    assertNoMatch("http://[::1]/", "http://example.com/*")
+    assertNoMatch("https://[::1]/", "http://[::1]/*")
+  }
+
+  @Test
+  fun `match IPv6 host comparison is case insensitive`() {
+    assertMatch("http://[2001:DB8::1]/", "http://[2001:db8::1]/*")
+    assertMatch("http://[2001:db8::1]/", "http://[2001:DB8::1]/*")
+  }
+
+  @Test
+  @Ignore
+  fun `match IPv6 host is canonicalized`() {
+    assertMatch("http://[::1]/", "http://[0:0:0:0:0:0:0:1]/*")
+    assertMatch("http://[0:0:0:0:0:0:0:1]/", "http://[::1]/*")
+  }
+
+  @Test
+  fun `match IPv6 host respects an explicit port`() {
+    assertMatch("http://[::1]:8080/a", "http://[::1]:8080/*")
+    assertNoMatch("http://[::1]:9090/a", "http://[::1]:8080/*")
+    assertNoMatch("http://[::1]/a", "http://[::1]:8080/*")
   }
 
   @Test
@@ -241,6 +274,14 @@ class UrlMatchTest {
   }
 
   @Test
+  fun `glob treats an IPv6 literal host as text`() {
+    assertGlob("http://[::1]/", "http://[::1]/*")
+    assertGlob("http://[::1]:8080/a", "http://[::1]:8080/*")
+    assertGlob("http://[2001:db8::1]/a", "*://[2001:db8::1]/*")
+    assertNoGlob("http://[::2]/", "http://[::1]/*")
+  }
+
+  @Test
   fun `glob treats question mark as a literal character`() {
     assertGlob("https://a.com/?", "https://a.com/?")
     assertGlob("https://a.com/?q", "https://a.com/?*")
@@ -291,6 +332,13 @@ class UrlMatchTest {
   @Test
   fun `regex accepts javascript style escaped slashes`() {
     assertRegex("https://a.com/x", """^https?:\/\/a\.com\/""")
+  }
+
+  @Test
+  fun `regex matches an IPv6 literal host`() {
+    assertRegex("http://[::1]/", """^http://\[::1\]/""")
+    assertRegex("http://[::1]:8080/a", """^http://\[::1\]:8080/""")
+    assertNoRegex("http://[::2]/", """^http://\[::1\]/""")
   }
 
   @Test
@@ -354,6 +402,16 @@ class UrlMatchTest {
 
     assertTrue(UrlMatch.testScript("https://a.com/x", options))
     assertFalse(UrlMatch.testScript("https://b.com/x", options))
+  }
+
+  @Test
+  fun `script accepts an IPv6 host through match and include`() {
+    val matchOptions = options(match = listOf("http://[::1]/*"))
+    val includeOptions = options(include = listOf("http://[::1]/*"))
+
+    assertTrue(UrlMatch.testScript("http://[::1]/x", matchOptions))
+    assertTrue(UrlMatch.testScript("http://[::1]/x", includeOptions))
+    assertFalse(UrlMatch.testScript("http://[::2]/x", includeOptions))
   }
 
   @Test
