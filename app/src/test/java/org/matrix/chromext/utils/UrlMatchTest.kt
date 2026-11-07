@@ -148,6 +148,23 @@ class UrlMatchTest {
   }
 
   @Test
+  fun `match path supports multiple wildcards`() {
+    assertMatch("https://example.com/foobarbaz", "https://example.com/foo*bar*baz")
+    assertMatch("https://example.com/fooxbarybaz", "https://example.com/foo*bar*baz")
+    assertMatch("https://example.com/foo/x/bar/y/baz", "https://example.com/foo*bar*baz")
+    assertMatch("https://example.com/foo/x/bar/y/z", "https://example.com/foo*bar*")
+    assertNoMatch("https://example.com/foobaz", "https://example.com/foo*bar*baz")
+    assertNoMatch("https://example.com/barbaz", "https://example.com/foo*bar*baz")
+  }
+
+  @Test
+  fun `match path treats consecutive wildcards as one`() {
+    assertMatch("https://example.com/ab", "https://example.com/a**b")
+    assertMatch("https://example.com/a/x/b", "https://example.com/a**b")
+    assertNoMatch("https://example.com/a", "https://example.com/a**b")
+  }
+
+  @Test
   fun `match path comparison is case sensitive`() {
     assertMatch("https://example.com/foo", "https://example.com/foo")
     assertNoMatch("https://example.com/FOO", "https://example.com/foo*")
