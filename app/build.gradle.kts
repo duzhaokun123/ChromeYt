@@ -89,6 +89,8 @@ dependencies {
   implementation("io.ktor:ktor-client-core:3.6.1")
   implementation("io.ktor:ktor-client-android:3.6.1")
   implementation("androidx.browser:browser:1.10.0")
+  implementation("com.hrakaroo:glob:0.9.0")
+
   testImplementation("junit:junit:4.13.2")
 }
 

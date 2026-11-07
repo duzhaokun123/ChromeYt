@@ -50,25 +50,12 @@ private fun urlMatch(match: String, url: String, strict: Boolean): Boolean {
   return false
 }
 
+@Deprecated(
+  "use UrlMatch.testScript(url, script.options)",
+  ReplaceWith("UrlMatch.testScript(url, script.options)")
+)
 fun matching(script: LoadedScript, url: String): Boolean {
-  script.options.exclude.forEach {
-    if (urlMatch(it, url, true)) {
-      return false
-    }
-  }
-  script.options.match.forEach {
-    if (urlMatch(it, url, false)) {
-      // Log.d("${script.id} injected")
-      return true
-    }
-  }
-  // keep old behavior
-  script.options.include.forEach {
-    if (urlMatch(it, url, false)) {
-      return true
-    }
-  }
-  return false
+  return UrlMatch.testScript(url, script.options)
 }
 
 fun isDevToolsFrontEnd(url: String?): Boolean {
