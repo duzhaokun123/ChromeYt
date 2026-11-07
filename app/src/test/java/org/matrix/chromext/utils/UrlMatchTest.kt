@@ -170,10 +170,19 @@ class UrlMatchTest {
   }
 
   @Test
-  fun `match returns false for unsupported or malformed patterns`() {
+  fun `match all urls covers http https and file`() {
+    assertMatch("http://example.com/x", "<all_urls>")
+    assertMatch("https://example.com/x", "<all_urls>")
+    assertMatch("file:///tmp/a.html", "<all_urls>")
+    assertNoMatch("chrome://settings/", "<all_urls>")
+  }
+
+  @Test
+  fun `match returns false for malformed patterns`() {
     assertNoMatch("https://example.com/", "example.com/*")
+    assertNoMatch("https://example.com/", "://*/*")
+    assertNoMatch("https://example.com/", "*//*/*")
     assertNoMatch("https://example.com/", "https://")
-    assertNoMatch("https://example.com/", "<all_urls>")
   }
 
   // ---------------------------------------------------------------- testGlob
