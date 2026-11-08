@@ -98,6 +98,10 @@ room3 {
   schemaDirectory("$projectDir/schemas")
 }
 
+tasks.withType<Test>().configureEach {
+  testLogging { showStandardStreams = true }
+}
+
 kotlin {
   compilerOptions {
     freeCompilerArgs.add("-Xcollection-literals")
