@@ -1,6 +1,8 @@
 package org.matrix.chromext.ui
 
 import android.app.Activity
+import android.app.AlertDialog
+import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -13,19 +15,29 @@ import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toolbar
+import androidx.core.net.toUri
 import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.core.widget.doAfterTextChanged
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.matrix.chromext.R
 import org.matrix.chromext.Resource
 import org.matrix.chromext.db.entity.Script
+import org.matrix.chromext.logger.AndroidLogger
 import org.matrix.chromext.script.ScriptDbManager
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.ScriptMetadata
 import org.matrix.chromext.utils.ScriptParser
+import org.matrix.chromext.utils.Toast
+import org.matrix.chromext.utils.asText
+import org.matrix.chromext.utils.loadExternalResource
 
 class ScriptConfigActivity : Activity(), OnApplyWindowInsetsListener {
   val toolbar by lazy { findViewById<Toolbar>(R.id.toolbar) }
@@ -41,6 +53,8 @@ class ScriptConfigActivity : Activity(), OnApplyWindowInsetsListener {
   var scriptId: String? = null
   var script: Script? = null
   lateinit var metadata: ScriptMetadata
+
+  private val scope = MainScope()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     Resource.enrich(this)
@@ -106,6 +120,11 @@ class ScriptConfigActivity : Activity(), OnApplyWindowInsetsListener {
     ViewCompat.setOnApplyWindowInsetsListener(window.decorView, this)
   }
 
+  override fun onDestroy() {
+    scope.cancel()
+    super.onDestroy()
+  }
+
   override fun onApplyWindowInsets(
     v: View,
     insets: WindowInsetsCompat
@@ -132,6 +151,71 @@ class ScriptConfigActivity : Activity(), OnApplyWindowInsetsListener {
           }
         } else {
           Log.toast(this, "no script")
+        }
+        return true
+      }
+
+      R.id.update -> {
+        if (script == null) {
+          Toast.show("no script")
+          return true
+        }
+        val updateUrl = metadata.getMetadata("updateURL") ?: metadata.getMetadata("downloadURL")
+        if (updateUrl == null) {
+          AlertDialog.Builder(this)
+            .setTitle("no way to check update")
+            .setMessage(
+              "script has no updateURL nor downloadURL\n" +
+                  "get update from where you download it"
+            )
+            .show()
+        } else {
+          val checkingDialog =
+            AlertDialog.Builder(this)
+              .setTitle("checking")
+              .setCancelable(false)
+              .show()
+          scope.launch(Dispatchers.IO) {
+            runCatching {
+              ScriptParser.parseScriptMetadata(loadExternalResource(updateUrl).asText())
+                ?: throw RuntimeException("invalid metadata from $updateUrl")
+            }.onFailure { e ->
+              AndroidLogger.e(e)
+              withContext(Dispatchers.Main) {
+                checkingDialog.cancel()
+                AlertDialog.Builder(this@ScriptConfigActivity)
+                  .setTitle("failed")
+                  .setMessage(e.localizedMessage ?: e.message ?: e.toString())
+                  .show()
+              }
+            }.onSuccess { newMetadata ->
+              withContext(Dispatchers.Main) {
+                checkingDialog.cancel()
+                if (newMetadata.version == metadata.version) {
+                  Toast.show("no update")
+                } else {
+                  AlertDialog.Builder(this@ScriptConfigActivity)
+                    .setTitle("update")
+                    .setMessage("${metadata.version} -> ${newMetadata.version}")
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton(android.R.string.ok) { _, _ ->
+                      val downloadUrl = newMetadata.getMetadata("downloadURL") ?: newMetadata.getMetadata("updateUrl")
+                      if (downloadUrl == null) {
+                        Toast.show("no downloadURL")
+                      } else {
+                        startActivity(
+                          Intent(
+                            this@ScriptConfigActivity, ScriptInstallActivity::class.java
+                          ).apply {
+                            data = downloadUrl.toUri()
+                          })
+                        finish()
+                      }
+                    }.show()
+                }
+              }
+            }
+          }
         }
         return true
       }

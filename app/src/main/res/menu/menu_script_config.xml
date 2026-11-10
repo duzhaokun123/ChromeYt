@@ -4,4 +4,8 @@
         android:id="@+id/save"
         android:title="save"
         android:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/update"
+        android:title="update"
+        android:showAsAction="never" />
 </menu>
