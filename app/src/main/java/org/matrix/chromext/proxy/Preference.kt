@@ -12,6 +12,7 @@ import org.json.JSONObject
 import org.luckypray.dexkit.annotations.DexKitExperimentalApi
 import org.matrix.chromext.Chrome
 import org.matrix.chromext.Listener
+import org.matrix.chromext.module.core.DexKit
 import org.matrix.chromext.script.Local
 import org.matrix.chromext.script.ScriptFileStorage
 import org.matrix.chromext.utils.Log
@@ -29,7 +30,7 @@ object PreferenceProxy {
   val class_ChromeBaseSettingsFragment =
     loadClass("Lorg/chromium/chrome/browser/settings/ChromeBaseSettingsFragment;")
 
-  val method_PreferenceFragmentCompat_addPreferencesFromResource = Chrome.dexKitBridge
+  val method_PreferenceFragmentCompat_addPreferencesFromResource = DexKit.dexKitBridge
     .getMethod {
       matcher {
         @Suppress("TYPE_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
@@ -39,7 +40,7 @@ object PreferenceProxy {
       }
     }.toMethod()
 
-  val method_PreferenceFragmentCompat_findPreference = Chrome.dexKitBridge
+  val method_PreferenceFragmentCompat_findPreference = DexKit.dexKitBridge
     .getMethod {
       matcher {
         @Suppress("TYPE_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")

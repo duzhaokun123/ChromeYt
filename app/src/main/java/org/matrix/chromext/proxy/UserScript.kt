@@ -4,6 +4,7 @@ import android.net.Uri
 import android.os.BaseBundle
 import org.luckypray.dexkit.annotations.DexKitExperimentalApi
 import org.matrix.chromext.Chrome
+import org.matrix.chromext.module.core.DexKit
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.findField
 import org.matrix.chromext.utils.findMethod
@@ -37,7 +38,7 @@ object UserScriptProxy {
    * mIsLoading is used in method stopLoading, before calling
    * Lorg/chromium/content_public/browser/WebContents;->stop()V
    */
-  val mIsLoading = Chrome.dexKitBridge.getFieldDirect("TabImpl.mIsLoading") { dexKitBridge ->
+  val mIsLoading = DexKit.dexKitBridge.getFieldDirect("TabImpl.mIsLoading") { dexKitBridge ->
     val stopLoading = dexKitBridge.findMethod {
       matcher {
         declaredClass(tabImpl)
@@ -63,13 +64,13 @@ object UserScriptProxy {
   val kMaxURLChars = 2097152
 
 
-  val class_TabWindowManager = Chrome.dexKitBridge.getClass {
+  val class_TabWindowManager = DexKit.dexKitBridge.getClass {
     matcher {
       usingStrings("Android.MultiWindowMode.AssertIndicesMatch")
     }
   }.toClass()
 
-  val method_TabWindowManagerSingleton_getInstance = Chrome.dexKitBridge.getMethod {
+  val method_TabWindowManagerSingleton_getInstance = DexKit.dexKitBridge.getMethod {
     matcher {
       paramCount(0)
       returnType(class_TabWindowManager)
@@ -81,7 +82,7 @@ object UserScriptProxy {
     }
   }.toMethod()
 
-  val method_TabWindowManager_getTabById = Chrome.dexKitBridge.getMethod {
+  val method_TabWindowManager_getTabById = DexKit.dexKitBridge.getMethod {
     matcher {
       declaredClass(class_TabWindowManager)
       paramTypes(Int::class.javaPrimitiveType)

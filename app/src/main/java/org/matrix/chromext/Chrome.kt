@@ -16,14 +16,10 @@ import java.net.HttpCookie
 import java.util.concurrent.Executors
 import org.json.JSONArray
 import org.json.JSONObject
-import org.luckypray.dexkit.DexKitCacheBridge
-import org.luckypray.dexkit.annotations.DexKitExperimentalApi
 import org.matrix.chromext.devtools.DevSessions
 import org.matrix.chromext.devtools.getInspectPages
 import org.matrix.chromext.devtools.hitDevTools
 import org.matrix.chromext.hook.UserScriptHook
-import org.matrix.chromext.module.core.DexKit
-import org.matrix.chromext.module.core.KtorClient
 import org.matrix.chromext.proxy.UserScriptProxy
 import org.matrix.chromext.script.GM
 import org.matrix.chromext.script.Local
@@ -31,6 +27,7 @@ import org.matrix.chromext.script.ScriptDbManager
 import org.matrix.chromext.script.ScriptDbManager.cosmeticFilters
 import org.matrix.chromext.script.ScriptDbManager.cspRules
 import org.matrix.chromext.utils.Log
+import org.matrix.chromext.utils.UrlMatch
 import org.matrix.chromext.utils.XMLHttpRequest
 import org.matrix.chromext.utils.findField
 import org.matrix.chromext.utils.findMethod
@@ -38,7 +35,6 @@ import org.matrix.chromext.utils.hookAfter
 import org.matrix.chromext.utils.invokeMethod
 import org.matrix.chromext.utils.isDevToolsFrontEnd
 import org.matrix.chromext.utils.isUserScript
-import org.matrix.chromext.utils.matching
 import org.matrix.chromext.utils.parseOrigin
 import org.matrix.chromext.utils.resolveContentUrl
 import org.matrix.chromext.utils.shouldBypassSandbox
@@ -53,20 +49,6 @@ object Chrome {
 
   val IO = Executors.newCachedThreadPool()
   val cookieStore = CookieManager().getCookieStore()
-
-  @Deprecated("use DexKit.dexKitBridge",
-    ReplaceWith("DexKit.dexKitBridge", "org.matrix.chromext.module.core.DexKit")
-  )
-  @OptIn(DexKitExperimentalApi::class)
-  val dexKitBridge: DexKitCacheBridge.RecyclableBridge
-    get() = DexKit.dexKitBridge
-
-  @Deprecated(
-    "use KtorClient.client",
-    ReplaceWith("KtorClient.client", "org.matrix.chromext.module.core.KtorClient")
-  )
-  val httpClient
-    get() = KtorClient.client
 
   fun init(ctx: Context, packageName: String? = null) {
     val initialized = mContext != null
@@ -315,7 +297,7 @@ object Chrome {
     if (asyncEvaluation) codes.add(initScript)
     if (runUserScript) {
       ScriptDbManager.loadedScripts
-        .filter { matching(it, url) && !(frameId != null && it.options.noFrames) }
+        .filter { UrlMatch.testScript(url, it.options) && !(frameId != null && it.options.noFrames) }
         .forEach {
           if ("frames" in it.options.grant) framesGranted = true
           GM.bootstrap(it, codes)

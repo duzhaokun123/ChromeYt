@@ -13,6 +13,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsBytes
 import io.ktor.client.statement.bodyAsText
 import org.matrix.chromext.Chrome
+import org.matrix.chromext.module.core.KtorClient
 import java.nio.charset.Charset
 import kotlin.io.encoding.Base64
 
@@ -35,7 +36,7 @@ suspend fun loadExternalResource(
   return when (uri.scheme) {
     "http", "https" -> {
       LoadExternalResourceResult.HttpResponseResult(
-        Chrome.httpClient.get(uri.toString())
+        KtorClient.client.get(uri.toString())
       )
     }
 

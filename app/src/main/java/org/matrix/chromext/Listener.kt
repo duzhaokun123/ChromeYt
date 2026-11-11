@@ -31,7 +31,6 @@ import org.matrix.chromext.utils.findMethod
 import org.matrix.chromext.utils.invalidUserScriptUrls
 import org.matrix.chromext.utils.isDevToolsFrontEnd
 import org.matrix.chromext.utils.isUserScript
-import org.matrix.chromext.utils.matching
 import org.matrix.chromext.utils.parseOrigin
 import androidx.core.net.toUri
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -40,6 +39,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.matrix.chromext.module.ScriptNotification
 import org.matrix.chromext.script.storage
+import org.matrix.chromext.utils.UrlMatch
 import org.matrix.chromext.utils.asBitmap
 import org.matrix.chromext.utils.loadExternalResource
 import org.matrix.chromext.utils.startActivitySafe
@@ -254,7 +254,7 @@ object Listener {
         if (detail.optBoolean("broadcast")) {
           detail.remove("broadcast")
           Chrome.broadcast("scriptStorage", detail) {
-            it != null && matching(script, it) && parseOrigin(it) != null
+            it != null && UrlMatch.testScript(it, script.options) && parseOrigin(it) != null
           }
         }
         val data = detail.getJSONObject("data")

@@ -2,9 +2,7 @@ package org.matrix.chromext.utils
 
 import android.net.Uri
 import android.provider.OpenableColumns
-import kotlin.text.Regex
 import org.matrix.chromext.Chrome
-import org.matrix.chromext.script.LoadedScript
 
 const val ERUD_URL = "https://cdn.jsdelivr.net/npm/eruda"
 private const val DEV_FRONT_END = "https://chrome-devtools-frontend.appspot.com"
@@ -12,50 +10,6 @@ private const val DEV_FRONT_END = "https://chrome-devtools-frontend.appspot.com"
 fun randomString(length: Int): String {
   val alphabet: List<Char> = ('a'..'z') + ('A'..'Z')
   return List(length) { alphabet.random() }.joinToString("")
-}
-
-private fun urlMatch(match: String, url: String, strict: Boolean): Boolean {
-  var pattern = match
-  val regexPattern = pattern.startsWith("/") && pattern.endsWith("/")
-
-  if (regexPattern) {
-    pattern = pattern.removeSurrounding("/", "/")
-    pattern = pattern.replace("\\/", "/")
-    pattern = pattern.replace("\\://", "://")
-  } else if ("*" !in pattern) {
-    if (strict) {
-      return pattern == url
-    } else {
-      return pattern in url
-    }
-  } else if ("://" in pattern || strict) {
-    pattern = pattern.replace("?", "\\?")
-    pattern = pattern.replace(".", "\\.")
-    pattern = pattern.replace("*", "[^:]*")
-    pattern = pattern.replace("[^:]*\\.", "([^:]*\\.)?")
-  } else {
-    return false
-  }
-
-  runCatching {
-        val result =
-            if (regexPattern) {
-              Regex(pattern).containsMatchIn(url)
-            } else {
-              Regex(pattern).matches(url)
-            }
-        return result
-      }
-      .onFailure { Log.i("Invaid matching rule: ${match}, error: " + it.message) }
-  return false
-}
-
-@Deprecated(
-  "use UrlMatch.testScript(url, script.options)",
-  ReplaceWith("UrlMatch.testScript(url, script.options)")
-)
-fun matching(script: LoadedScript, url: String): Boolean {
-  return UrlMatch.testScript(url, script.options)
 }
 
 fun isDevToolsFrontEnd(url: String?): Boolean {

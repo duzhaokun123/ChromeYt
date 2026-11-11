@@ -4,6 +4,7 @@ import android.content.Context
 import chromium.AppMenuHandler
 import org.luckypray.dexkit.annotations.DexKitExperimentalApi
 import org.matrix.chromext.Chrome
+import org.matrix.chromext.module.core.DexKit
 import org.matrix.chromext.utils.findField
 import org.matrix.chromext.utils.reflect.toMethod
 import java.util.function.Supplier
@@ -33,7 +34,7 @@ object PageMenuProxy {
    *             boolean isMenuIconAtStart);
    * }
    */
-  val method_AppMenuItemUtils_buildModelForStandardMenuItem = Chrome.dexKitBridge.getMethod {
+  val method_AppMenuItemUtils_buildModelForStandardMenuItem = DexKit.dexKitBridge.getMethod {
     matcher {
       returnType(class_PropertyModel)
       paramTypes(
@@ -61,7 +62,7 @@ object PageMenuProxy {
    * }
    */
   val method_AppMenuItemUtils_buildModelForMenuItemWithSubmenu =
-    Chrome.dexKitBridge.getMethod {
+    DexKit.dexKitBridge.getMethod {
       matcher {
         returnType(class_PropertyModel)
         paramTypes(
@@ -81,7 +82,7 @@ object PageMenuProxy {
    *             PropertyModel model, boolean showIcon)
    */
   val method_AppMenuItemUtils_createMenuItemWithSubmenuListItem =
-    Chrome.dexKitBridge.getMethod {
+    DexKit.dexKitBridge.getMethod {
       matcher {
         declaredClass(method_AppMenuItemUtils_buildModelForStandardMenuItem.declaringClass)
         paramTypes(
@@ -99,7 +100,7 @@ object PageMenuProxy {
    *             PropertyModel model, boolean showIcon)
    */
   val method_AppMenuItemUtils_createStandardListItem =
-    Chrome.dexKitBridge.getMethod {
+    DexKit.dexKitBridge.getMethod {
       matcher {
         declaredClass(method_AppMenuItemUtils_buildModelForStandardMenuItem.declaringClass)
         paramTypes(
