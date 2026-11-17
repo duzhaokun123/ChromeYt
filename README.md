@@ -7,6 +7,9 @@ o0kam1 fork 的 [ChromeXt](https://github.com/JingMatrix/ChromeXt)
 只会尝试兼容最新 稳定 Chrome
 **不会**兼容任何其他浏览器
 
+> [!WARNING]
+> 在 sdk < 36 (Android 16) 的系统上没有测试 因为我没有更老的系统的设备
+
 [原始 README](README.bak.md)
 
 下载从 [GitHub Actions](https://github.com/duzhaokun123/ChromeYt/actions/workflows/android.yml?query=event%3Apush+branch%3Amaster)
