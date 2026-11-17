@@ -3,7 +3,7 @@ name: Android CI
 on:
   push:
     branches: [ "master" ]
-    tags: [ "*" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "master" ]
   workflow_dispatch:
@@ -13,6 +13,8 @@ permissions:
 
 env:
   IS_MASTER_PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+  IS_TAG_PUSH: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+  IS_SIGNED_BUILD: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')) }}
 
 jobs:
   build:
@@ -52,10 +54,10 @@ jobs:
 
       - name: Build release APK
         env:
-          SIGNING_KEY: ${{ env.IS_MASTER_PUSH == 'true' && secrets.SIGNING_KEY || '' }}
-          ALIAS: ${{ env.IS_MASTER_PUSH == 'true' && secrets.ALIAS || '' }}
-          KEY_STORE_PASSWORD: ${{ env.IS_MASTER_PUSH == 'true' && secrets.KEY_STORE_PASSWORD || '' }}
-          KEY_PASSWORD: ${{ env.IS_MASTER_PUSH == 'true' && secrets.KEY_PASSWORD || '' }}
+          SIGNING_KEY: ${{ env.IS_SIGNED_BUILD == 'true' && secrets.SIGNING_KEY || '' }}
+          ALIAS: ${{ env.IS_SIGNED_BUILD == 'true' && secrets.ALIAS || '' }}
+          KEY_STORE_PASSWORD: ${{ env.IS_SIGNED_BUILD == 'true' && secrets.KEY_STORE_PASSWORD || '' }}
+          KEY_PASSWORD: ${{ env.IS_SIGNED_BUILD == 'true' && secrets.KEY_PASSWORD || '' }}
         run: |
           if [ -n "$SIGNING_KEY" ]; then
             echo "$SIGNING_KEY" | base64 -d > keystore.jks
@@ -74,3 +76,15 @@ jobs:
           path: app/build/ChromeYt_release.apk
           if-no-files-found: error
           archive: false
+
+      - name: Create draft release
+        if: env.IS_TAG_PUSH == 'true'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ChromeYt ${{ github.ref_name }}
+          draft: true
+          files: |
+            app/build/ChromeYt_debug.apk
+            app/build/ChromeYt_release.apk
+          fail_on_unmatched_files: true
