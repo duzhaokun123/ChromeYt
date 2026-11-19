@@ -21,6 +21,7 @@ import android.widget.EditText
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toolbar
+import androidx.core.text.color
 import androidx.core.text.inSpans
 import androidx.core.text.italic
 import androidx.core.text.scale
@@ -42,6 +43,7 @@ import org.matrix.chromext.utils.asDrawable
 import org.matrix.chromext.utils.asText
 import org.matrix.chromext.utils.dp2px
 import org.matrix.chromext.utils.loadExternalResource
+import org.matrix.chromext.utils.toReadableSize
 
 class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
   companion object {
@@ -151,7 +153,8 @@ class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
     scope.launch(Dispatchers.IO) {
       runCatching {
         scriptFile = loadExternalResource(url, allowedScheme = ["http", "https", "content", "file"]).asText()
-        val metadata = ScriptParser.parseScriptMetadata(scriptFile!!)
+        val metadataString = ScriptParser.splitScript(scriptFile!!)?.first
+        val metadata = metadataString?.let { ScriptParser.parseMetadata(it) }
 
         var scriptIcon: Drawable? = null
         if (metadata?.icon != null) {
@@ -168,7 +171,17 @@ class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
           if (installedScript != null) ScriptParser.parseMetadata(installedScript.meta) else null
 
         withContext(Dispatchers.Main) {
-          tv_raw.text = scriptFile
+          if (scriptFile!!.length > 200_000) { // 200 KB
+            tv_raw.text = SpannableStringBuilder().apply {
+              metadataString?.let { appendLine(it) } ?: run { italic { appendLine("metadata parse failed") } }
+              color(Color.RED) {
+                appendLine("script too large! (about ${scriptFile!!.length.toLong().toReadableSize()})")
+                appendLine("save to file for review")
+              }
+            }
+          } else {
+            tv_raw.text = scriptFile
+          }
           if (metadata == null) {
             btn_install.isEnabled = false
             tv_info.text = "script parse failed!"
