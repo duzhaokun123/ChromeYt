@@ -39,6 +39,7 @@ import org.matrix.chromext.Resource
 import org.matrix.chromext.script.ScriptDbManager
 import org.matrix.chromext.utils.Log
 import org.matrix.chromext.utils.ScriptParser
+import org.matrix.chromext.utils.Toast
 import org.matrix.chromext.utils.asDrawable
 import org.matrix.chromext.utils.asText
 import org.matrix.chromext.utils.dp2px
@@ -48,6 +49,7 @@ import org.matrix.chromext.utils.toReadableSize
 class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
   companion object {
     const val PICK_FILE = 1
+    const val SAVE_FILE = 2
 
     val grantChromeXt = listOf(
       "GM.ChromeXt",
@@ -126,6 +128,18 @@ class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
         startActivityForResult(intent, PICK_FILE)
         return true
       }
+      R.id.save -> {
+        if (scriptFile != null) {
+          val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            type = "text/javascript"
+            putExtra(Intent.EXTRA_TITLE, "${System.currentTimeMillis()}.user.js")
+          }
+          startActivityForResult(intent, SAVE_FILE)
+        } else {
+          Toast.show("script not loaded!")
+        }
+        return true
+      }
     }
     return super.onMenuItemSelected(featureId, item)
   }
@@ -136,6 +150,18 @@ class ScriptInstallActivity : Activity(), OnApplyWindowInsetsListener {
         if (resultCode == RESULT_OK) {
           et_url.setText(data?.dataString)
           loadUrl()
+        }
+      }
+      SAVE_FILE -> {
+        if (resultCode == RESULT_OK) {
+          if (data?.data != null) {
+            contentResolver.openOutputStream(data.data!!)?.use {
+              it.writer().use { it.write(scriptFile) }
+            }
+            Toast.show("save")
+          } else {
+            Toast.show("no data!")
+          }
         }
       }
 

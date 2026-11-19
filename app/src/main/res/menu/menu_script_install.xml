@@ -4,4 +4,8 @@
         android:id="@+id/file"
         android:title="open file"
         android:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/save"
+        android:title="save file"
+        android:showAsAction="never" />
 </menu>
