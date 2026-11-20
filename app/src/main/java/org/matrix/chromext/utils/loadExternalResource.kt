@@ -30,10 +30,11 @@ suspend fun loadExternalResource(
   vararg allowedScheme: String = ["http", "https", "data"]
 ): LoadExternalResourceResult {
   val uri = url.toUri()
-  if (uri.scheme !in allowedScheme) {
-    throw RuntimeException("loadExternalResource not allowed scheme ${uri.scheme} for $uri")
+  val scheme = uri.scheme?.lowercase()
+  if (scheme !in allowedScheme) {
+    throw RuntimeException("loadExternalResource not allowed scheme $scheme for $uri")
   }
-  return when (uri.scheme) {
+  return when (scheme) {
     "http", "https" -> {
       LoadExternalResourceResult.HttpResponseResult(
         KtorClient.client.get(uri.toString())
@@ -75,7 +76,7 @@ suspend fun loadExternalResource(
     }
 
     else -> {
-      throw RuntimeException("loadExternalResource unsupported scheme ${uri.scheme} for $uri")
+      throw RuntimeException("loadExternalResource unsupported scheme $scheme for $uri")
     }
   }
 }
